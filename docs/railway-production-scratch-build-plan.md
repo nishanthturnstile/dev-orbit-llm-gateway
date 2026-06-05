@@ -19,13 +19,12 @@ The stack remains LiteLLM-first:
 - Railway managed Redis is deferred until multiple LiteLLM replicas, distributed rate limiting, or shared response/cache state are required.
 - Cloudflare Tunnel plus Cloudflare Access is the preferred public ingress model so LiteLLM does not need a public Railway origin.
 
-This plan replaces the previous VPS, Docker Compose, and Caddy production assumption with a Railway-native topology:
+This plan uses the following Railway-native production topology:
 
 - Railway project with `staging` and `production` environments.
-- Separate Railway services instead of one Docker Compose stack.
-- Railway managed Postgres instead of a self-managed database container.
+- Dedicated Railway services for `cloudflared-tunnel`, `litellm-proxy`, and `backup-worker`, plus managed Postgres.
 - Railway private networking for service-to-service and app-to-database traffic.
-- No Caddy for TLS termination; Railway and Cloudflare handle HTTPS.
+- HTTPS/public ingress through Cloudflare DNS, Access, and Tunnel with Railway as private origin.
 - Cloudflare Tunnel publishes the service through Cloudflare without exposing a public Railway domain.
 - Cloudflare Access protects the developer API and admin UI with separate policies.
 - Open-source, stable tools are preferred wherever possible.
@@ -443,7 +442,7 @@ Tasks:
 
 Exit criteria:
 
-- The repo explains how Railway, Cloudflare Tunnel, and LiteLLM replace Compose/Caddy/custom admin.
+- The repo documents Railway + Cloudflare Tunnel + LiteLLM architecture, service boundaries, and deferred components.
 - CI fails on committed secrets or forbidden config patterns.
 
 ### Phase 2 - Railway staging services
