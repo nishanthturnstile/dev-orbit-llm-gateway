@@ -1,7 +1,7 @@
 # Implementation status tracker
 
 **Status date:** 2026-06-06
-**Current phase:** Phase 2 - Local service scaffolding and policy/config authoring (Done)
+**Current phase:** Phase 3 - CI/CD, secret scanning, and policy gates (Done)
 **Primary roadmap:** `docs\internal-llm-gateway-implementation-roadmap.md`
 
 ## Status rules
@@ -22,7 +22,7 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | 0 | Launch-blocker validation and disposable proof spike | Done | Railway + LiteLLM native-auth proof is validated with credited OpenAI chat and streaming through the OpenAI-compatible validation script. Operator accepted script validation for Phase 2 planning and deferred named developer-tool compatibility to Phase 8. Disposable resources are explicitly Phase 0 only and not staging/production despite Railway's default environment name. |
 | 1 | Repository and project structure | Done | Repository-only gate exception accepted while Phase 0 funded provider proof remains blocked. Structure/docs/placeholders added; no Railway/provider resources mutated. |
 | 2 | Local service scaffolding and policy/config authoring | Done | Local scaffolds, LiteLLM runtime config, policy metadata, smoke skeletons, and validation docs are complete. Local YAML/verifier/shell syntax/pytest validation passed. GPT-5.5 and Opus 4.8 reviews approved with no blockers. No Railway/provider/Cloudflare resources were mutated. |
-| 3 | CI/CD, secret scanning, and policy gates | Not started | Depends on Phase 1 repository structure and Phase 2 config targets. |
+| 3 | CI/CD, secret scanning, and policy gates | Done | Local/CI enforcement scripts, GitHub Actions workflows, secret scanning, and image policy gates are complete. Local validation passed; GPT-5.5 approved as-is and Opus 4.8 approved with minor hardening notes that were addressed. No Railway/provider/Cloudflare/GitHub settings were mutated. |
 | 4 | Durable Railway staging provisioning | Not started | Depends on Phase 0 completion and Phase 3 safety gates. |
 | 5 | LiteLLM deployment and runtime policy validation | Not started | Depends on durable Railway staging. |
 | 6 | Public-origin hardening and access validation | Not started | Depends on staging LiteLLM native-auth deployment and public-origin risk acceptance. |
@@ -128,6 +128,29 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | Service scaffolds include README notes for deployment and security boundaries. | Done | LiteLLM, backup worker, and cloudflared READMEs document runtime source, deployment boundaries, and deferred gates. |
 | No service exposes or assumes a public Railway domain for `litellm-proxy`. | Done | Targeted Phase 2 service/config/test scan found no `.up.railway.app` values outside historical Phase 0 docs/status. |
 | GPT and Opus implementation reviews are complete. | Done | GPT-5.5 approved as-is. Opus 4.8 approved with one non-blocking denylist clarity note, which was addressed before final validation. |
+
+## Phase 3 task tracker
+
+| ID | Roadmap item | Status | Evidence / blocker | Artifact |
+| --- | --- | --- | --- | --- |
+| P3-01 | Review Phase 3 plan with GPT and Opus before implementation. | Done | GPT-5.5 and Opus 4.8 reviewed the plan; feedback was incorporated before implementation. | Session `plan.md` |
+| P3-02 | Add shared LiteLLM config linting. | Done | Shared Python validator, shell launcher, and PowerShell lint gate created. `python scripts\validate-litellm-config.py`, `bash services/litellm/scripts/verify-config.sh`, and `pwsh -NoProfile -File scripts\lint-litellm-config.ps1` passed. | `scripts\validate-litellm-config.py`; `services\litellm\scripts\verify-config.sh`; `scripts\lint-litellm-config.ps1` |
+| P3-03 | Add secret scanning. | Done | `.gitleaks.toml` and `scripts\check-secrets.ps1` created. Pinned Gitleaks working-tree scan returned no leaks. | `.gitleaks.toml`; `scripts\check-secrets.ps1` |
+| P3-04 | Add CI policy workflow. | Done | Read-only, secret-free CI workflow created with SHA-pinned actions, `persist-credentials: false`, no path filters, and no `pull_request_target`. Workflow policy lint passed. | `.github\workflows\ci.yml` |
+| P3-05 | Add image policy workflow. | Done | Image policy workflow created; all service Dockerfiles use digest-pinned base images, including backup-worker. | `.github\workflows\image-policy.yml`; `services\backup-worker\Dockerfile` |
+| P3-06 | Add staging smoke workflow skeleton. | Done | Validate-only workflow and script created; no network, Railway CLI, provider, or secret usage. | `.github\workflows\staging-smoke.yml`; `scripts\smoke-railway.ps1` |
+| P3-07 | Add Phase 3 docs. | Done | CI policy and secret-scanning docs created; README, repository structure, local validation, and status docs updated. | `docs\operations\ci-policy-gates.md`; `docs\security\secret-scanning.md` |
+| P3-08 | Validate and review implementation. | Done | Full local validation passed. GPT-5.5 approved as-is; Opus 4.8 approved with two non-blocking hardening notes, both addressed before final validation. | This file |
+
+## Phase 3 exit criteria tracker
+
+| Exit criterion | Status | Evidence / blocker |
+| --- | --- | --- |
+| Unsafe config cannot merge. | Done | `ci.yml`, shared validator, PowerShell lint, workflow static checks, and repository hygiene gates are present and validated locally. |
+| Secret scanning runs locally and in CI. | Done | `scripts\check-secrets.ps1` runs locally and in `ci.yml`; pinned Gitleaks working-tree scan returned no leaks. |
+| LiteLLM config linting runs locally and in CI. | Done | Shared Python validator runs via shell and PowerShell wrappers locally and in `ci.yml`. |
+| Image pinning checks run in CI. | Done | `image-policy.yml` runs the image policy checks; all service Dockerfiles are digest-pinned. |
+| Smoke-test workflow can be run once staging exists. | Done | `staging-smoke.yml` is validate-only in Phase 3 and calls `scripts\smoke-railway.ps1 -ValidateOnly`. |
 
 ## Latest Phase 0 technical validation
 

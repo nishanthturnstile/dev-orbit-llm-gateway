@@ -1,5 +1,6 @@
 param(
-    [string]$BaseUrl = "https://litellm-proxy-production-bd81.up.railway.app"
+    [Parameter(Mandatory = $true)]
+    [string]$BaseUrl
 )
 
 $ErrorActionPreference = "Continue"

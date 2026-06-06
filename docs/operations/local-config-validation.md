@@ -6,6 +6,7 @@ Phase 2 config validation checks local artifacts only. It must not call Railway,
 
 ```sh
 sh services/litellm/scripts/verify-config.sh
+pwsh -NoProfile -File scripts/lint-litellm-config.ps1
 ```
 
 ## Windows PowerShell
@@ -14,10 +15,10 @@ The verifier uses Python and PyYAML. If PyYAML is missing, install it in a local
 
 ```powershell
 python -m pip install PyYAML
-sh services\litellm\scripts\verify-config.sh
+pwsh -NoProfile -File scripts\lint-litellm-config.ps1
 ```
 
-If `sh` is unavailable on Windows, run the same validation logic from a shell that supports POSIX scripts, such as Git Bash or WSL. Phase 3 CI should run this script on Linux.
+`scripts\lint-litellm-config.ps1` is the preferred Windows entry point. If `sh` is available through Git Bash or WSL, `sh services\litellm\scripts\verify-config.sh` runs the same shared Python validator.
 
 ## Validation coverage
 

@@ -1,16 +1,25 @@
 # Repository structure
 
-**Status:** Phase 2 repository structure
-**Related roadmap phase:** Phase 2 - Local service scaffolding and policy/config authoring
+**Status:** Phase 3 repository structure
+**Related roadmap phase:** Phase 3 - CI/CD, secret scanning, and policy gates
 
-## Current structure after Phase 2
+## Current structure after Phase 3
 
 ```text
 .
 |-- README.md
 |-- .env.example
+|-- .gitattributes
 |-- .gitignore
+|-- .gitleaks.toml
 |-- AGENTS.md
+|-- requirements-ci.txt
+|-- .github
+|   |-- dependabot.yml
+|   `-- workflows
+|       |-- ci.yml
+|       |-- image-policy.yml
+|       `-- staging-smoke.yml
 |-- config
 |   |-- cloudflare
 |   |   `-- README.md
@@ -30,6 +39,10 @@
 |   |-- runbooks
 |   `-- security
 |-- scripts
+|   |-- check-secrets.ps1
+|   |-- lint-litellm-config.ps1
+|   |-- smoke-railway.ps1
+|   |-- validate-litellm-config.py
 |-- services
 |   |-- backup-worker
 |   |   |-- Dockerfile
@@ -58,6 +71,7 @@
 ```
 
 This is a Phase 2 local scaffold and policy baseline, not a deployed staging stack.
+Phase 3 adds local and GitHub Actions enforcement gates, but still does not deploy staging or production resources.
 
 ## Active runtime config
 
@@ -83,6 +97,19 @@ Phase 2 adds:
 
 Phase 2 does not add CI workflows, durable Railway staging, production services, or virtual-key automation.
 
+## Phase 3 additions
+
+Phase 3 adds:
+
+- Read-only GitHub Actions policy workflows.
+- Gitleaks working-tree secret scanning config.
+- Cross-platform LiteLLM config linting.
+- Image pinning checks.
+- Validate-only staging smoke workflow skeleton.
+- CI policy and secret-scanning docs.
+
+Phase 3 does not add durable Railway staging, production services, repository settings mutation, provider validation, or real smoke-test endpoint calls.
+
 ## Deferred directories
 
 The following directories must remain absent unless a later approved decision introduces them:
@@ -93,7 +120,7 @@ The following directories must remain absent unless a later approved decision in
 
 ## Checkout hygiene
 
-Every directory intended to exist after Phase 2 contains a tracked README, script, config, test, or `.gitkeep`, because Git does not preserve empty directories. A fresh checkout should include the documented repository homes without requiring local generated files.
+Every directory intended to exist after Phase 3 contains a tracked README, script, config, workflow, test, or `.gitkeep`, because Git does not preserve empty directories. A fresh checkout should include the documented repository homes without requiring local generated files.
 
 ## Official-doc references applied
 
@@ -102,4 +129,4 @@ Every directory intended to exist after Phase 2 contains a tracked README, scrip
 - LiteLLM `/health/readiness` is appropriate for deployment readiness; `/health` probes providers.
 - Railway variables should hold sealed secrets and service references, not committed values.
 - Railway detects service Dockerfiles by name/path and supports config-as-code in later phases.
-- Future GitHub Actions should use least privilege, masking, safe expression handling, and pinned third-party actions.
+- GitHub Actions use least privilege, no secrets for Phase 3 gates, safe expression handling, `persist-credentials: false`, and full-SHA-pinned actions.

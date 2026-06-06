@@ -1,0 +1,83 @@
+title = "Internal LLM Gateway secret scanning"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API key"
+regex = '''\b(sk-[A-Za-z0-9_-]{16,})\b'''
+secretGroup = 1
+keywords = ["sk-"]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API key"
+regex = '''\b(sk-ant-[A-Za-z0-9_-]{16,})\b'''
+secretGroup = 1
+keywords = ["sk-ant"]
+
+[[rules]]
+id = "database-url"
+description = "Database connection URL"
+regex = '''\b((?:postgres|postgresql|redis)://[^<\s'"`]+)'''
+secretGroup = 1
+keywords = ["postgres://", "postgresql://", "redis://"]
+
+[[rules.allowlists]]
+description = "Policy and redaction regex definitions"
+paths = [
+  '''scripts/check-secrets\.ps1''',
+  '''scripts/phase0-validate-litellm\.ps1''',
+  '''scripts/validate-litellm-config\.py''',
+]
+
+[[rules]]
+id = "private-key-block"
+description = "Private key block"
+regex = '''(-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----)'''
+secretGroup = 1
+keywords = ["PRIVATE KEY"]
+
+[[rules]]
+id = "railway-private-host"
+description = "Railway private service hostname"
+regex = '''\b([A-Za-z0-9.-]+\.railway\.internal)\b'''
+secretGroup = 1
+keywords = ["railway.internal"]
+
+[[rules]]
+id = "railway-public-proof-host"
+description = "Concrete Railway public proof hostname"
+regex = '''\b([A-Za-z0-9-]+\.up\.railway\.app)\b'''
+secretGroup = 1
+keywords = [".up.railway.app"]
+
+[[rules.allowlists]]
+description = "Historical Phase 0 public proof URL docs"
+paths = [
+  '''docs/decisions/phase-0-.*\.md''',
+  '''docs/decisions/public-origin-risk-acceptance\.md''',
+  '''docs/operations/implementation-status\.md''',
+]
+
+[[rules]]
+id = "cloudflare-token-assignment"
+description = "Cloudflare token assignment"
+regex = '''(?i)\b((?:TUNNEL_TOKEN|CLOUDFLARE_API_TOKEN|CLOUDFLARE_TUNNEL_TOKEN)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{20,})'''
+secretGroup = 1
+keywords = ["TUNNEL_TOKEN", "CLOUDFLARE"]
+
+[[rules]]
+id = "backup-secret-assignment"
+description = "Backup or object storage credential assignment"
+regex = '''(?i)\b((?:BACKUP_ENCRYPTION_KEY|RCLONE_CONFIG_[A-Z0-9_]+_(?:SECRET_ACCESS_KEY|ACCESS_KEY_ID))\s*[:=]\s*['"]?[A-Za-z0-9_\-+/=]{16,})'''
+secretGroup = 1
+keywords = ["BACKUP_ENCRYPTION_KEY", "RCLONE_CONFIG"]
+
+[[allowlists]]
+description = "Documented placeholders only"
+regexes = [
+  '''<[^>\s]+>''',
+  '''os\.environ/[A-Z0-9_]+''',
+]

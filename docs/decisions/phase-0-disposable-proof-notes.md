@@ -84,7 +84,7 @@ Validated on 2026-06-06 after adding OpenAI credits:
 
 ```powershell
 $railway = Join-Path $env:APPDATA 'npm\railway.cmd'
-& $railway run --service litellm-proxy --environment production -- pwsh -NoProfile -File .\scripts\phase0-validate-litellm.ps1
+& $railway run --service litellm-proxy --environment production -- pwsh -NoProfile -File .\scripts\phase0-validate-litellm.ps1 -BaseUrl '<phase0-base-url>'
 ```
 
 The command returned:

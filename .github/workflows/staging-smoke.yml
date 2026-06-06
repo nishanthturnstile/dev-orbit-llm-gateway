@@ -1,0 +1,26 @@
+name: Staging smoke skeleton
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: staging-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-skeleton:
+    name: Validate smoke skeleton
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Validate smoke script shape
+        shell: pwsh
+        run: ./scripts/smoke-railway.ps1 -ValidateOnly

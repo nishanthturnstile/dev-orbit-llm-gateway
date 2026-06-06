@@ -17,22 +17,22 @@ Cloudflare Tunnel/Access/WAF, Redis, a custom admin API, and a custom admin web 
 
 | Service | Status | Purpose |
 | --- | --- | --- |
-| `services\litellm` | Phase 2 local scaffold | LiteLLM proxy image/config home. `services\litellm\config.yaml` is the runtime config source of truth. |
+| `services\litellm` | Phase 3 policy-gated scaffold | LiteLLM proxy image/config home. `services\litellm\config.yaml` is the runtime config source of truth. |
 | Railway managed Postgres | Platform service, not a repo directory | Persistent LiteLLM state. |
-| `services\backup-worker` | Phase 2 local scaffold | Future off-platform logical backup worker before production. |
-| `services\cloudflared-tunnel` | Deferred Phase 2 scaffold | Optional future hardening if public-origin risk requires it. |
+| `services\backup-worker` | Phase 3 policy-gated scaffold | Future off-platform logical backup worker before production. |
+| `services\cloudflared-tunnel` | Deferred Phase 3 policy-gated scaffold | Optional future hardening if public-origin risk requires it. |
 
 Do not add `apps\admin-web`, `services\admin-api`, `services\llm-edge`, Redis, or custom admin database artifacts without an approved later-phase decision.
 
 ## Local development approach
 
-Phase 2 establishes local service scaffolds, LiteLLM config, validation scripts, policy metadata, and smoke test skeletons. CI gates, durable Railway staging, and production deployment are owned by later phases in the roadmap.
+Phase 3 establishes local and GitHub Actions policy gates for the Phase 2 scaffolds. Run `pwsh -NoProfile -File scripts\lint-litellm-config.ps1` and `pwsh -NoProfile -File scripts\check-secrets.ps1` before opening changes that touch config, workflows, scripts, Dockerfiles, or docs with operational examples.
 
 Use `.env.example` for variable names and placeholder shapes only. Real provider keys, LiteLLM keys, generated virtual keys, Railway variables, database URLs, Redis URLs, backup credentials, and private hostnames must stay out of the repository.
 
 ## Deployment model
 
-Durable Railway staging and production deployment are later phases. No Railway, provider, Cloudflare, database, tunnel, or domain resources should be created or mutated from Phase 2 local scaffold work.
+Durable Railway staging and production deployment are later phases. No Railway, provider, Cloudflare, database, tunnel, GitHub repository setting, or domain resources should be created or mutated from Phase 3 policy-gate work.
 
 When deployment phases begin, LiteLLM should use `/health/readiness` for Railway deployment health checks. Do not use `/health` as a deployment health check because LiteLLM documents it as a provider-probing endpoint.
 
@@ -45,4 +45,6 @@ When deployment phases begin, LiteLLM should use `/health/readiness` for Railway
 - Service boundaries: `docs\decisions\v1-service-boundaries.md`
 - Repository structure: `docs\operations\repository-structure.md`
 - Local config validation: `docs\operations\local-config-validation.md`
+- CI policy gates: `docs\operations\ci-policy-gates.md`
 - Model alias policy: `docs\security\model-alias-policy.md`
+- Secret scanning: `docs\security\secret-scanning.md`
