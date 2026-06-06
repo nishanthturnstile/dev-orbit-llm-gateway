@@ -1,6 +1,6 @@
 # Phase 0 launch-blocker decision record
 
-**Status:** In progress; live proof deployed, final provider-backed validation blocked by OpenAI credits  
+**Status:** Phase 0 technical and policy checks complete except funded provider-backed chat/streaming validation  
 **Date opened:** 2026-06-05  
 **Roadmap phase:** Phase 0 - Launch-blocker validation and disposable proof spike  
 **Tracker:** `docs\operations\implementation-status.md`
@@ -28,15 +28,15 @@ An Opus 4.8 review was completed before implementation on 2026-06-05. The review
 
 | Phase 0 deliverable | Artifact / section | Status |
 | --- | --- | --- |
-| Phase 0 decision record | This file | In progress |
+| Phase 0 decision record | This file | Done for Phase 0 except funded provider-backed validation |
 | Disposable proof notes with resource IDs, commands, and teardown status | `docs\decisions\phase-0-disposable-proof-notes.md` | In progress; final chat/streaming proof blocked by OpenAI credits |
 | Supported-tool validation notes | `docs\onboarding\supported-tools-matrix.md` | Drafted; final compatibility proof blocked by OpenAI credits |
-| Public-origin risk acceptance | `docs\decisions\public-origin-risk-acceptance.md` | In progress |
+| Public-origin risk acceptance | `docs\decisions\public-origin-risk-acceptance.md` | Done for Phase 0 |
 | LiteLLM native-auth policy | `docs\security\litellm-native-auth-policy.md` | Drafted; blocked on operator approval |
-| Static egress IP assessment | Static egress section in this file | Blocked on final provider list |
-| Initial budget and alert threshold proposal | Budget section in this file | Blocked on operator decision |
-| Initial IdP/group mapping proposal | Access groups section in this file | Blocked on operator decision |
-| Initial key distribution and revocation proposal | `docs\operations\key-distribution.md` | Drafted; blocked on operator approval |
+| Static egress IP assessment | Static egress section in this file | Done for Phase 0 OpenAI proof; additional providers deferred |
+| Initial budget and alert threshold proposal | Budget section in this file | Done for Phase 0 |
+| Initial IdP/group mapping proposal | Access groups section in this file | Done for Phase 0 |
+| Initial key distribution and revocation proposal | `docs\operations\key-distribution.md` | Done for Phase 0 |
 
 ## Decision and access intake
 
@@ -47,7 +47,7 @@ An Opus 4.8 review was completed before implementation on 2026-06-05. The review
 | D0-03 | Approval to create disposable Phase 0 Railway resources, including teardown owner and deadline. | Done | Operator | Resource creation was approved and completed; teardown owner is operator/project owner; deadline is within 24 hours after funded validation or by 2026-06-13 if validation is deferred. |
 | D0-04 | Public-origin LiteLLM-native-auth risk acceptance. | Done for Phase 0 | Operator / security owner | Operator approved Phase 0 acceptance values: owner/monitoring owner, review date, proof budgets, temporary key rate limits, metadata-only logging, and strong admin credentials. |
 | D0-05 | Admin UI exposure decision. | Done for Phase 0 | Operator / security owner | Strong LiteLLM admin credentials are accepted for Phase 0 only. SSO/edge gate decision must be revisited before staging/production. |
-| D0-06 | Target API and admin hostnames. | Blocked | Operator / product owner | Required to configure Railway public/custom domain and supported-tool docs. |
+| D0-06 | Target API and admin hostnames. | Done for Phase 0 | Operator / product owner | Use the temporary Railway URL for Phase 0. Defer custom API/admin domains until staging. |
 | D0-07 | Approved provider list and one low-cost proof model. | In progress | Product / operator | OpenAI `gpt-4o-mini` / `dev-fast` selected for proof; key is valid but lacks credits. |
 | D0-08 | Provider static egress IP allowlisting requirements. | Done for Phase 0 OpenAI proof | Operator / provider account owner | OpenAI `/v1/models` succeeds from the proof environment and LiteLLM requests reach OpenAI. Additional providers still need assessment before production. |
 | D0-09 | Company monthly budget, per-developer budget, and alert thresholds. | Done for Phase 0 | Product / finance owner | Operator approved Phase 0 proof cap and alert defaults. Durable company/developer budgets remain later staging/production decisions. |
@@ -64,7 +64,7 @@ An Opus 4.8 review was completed before implementation on 2026-06-05. The review
 | --- | --- | --- |
 | Railway CLI installed | Done | Railway CLI 5.3.0 is installed at `C:\Users\v-mnmurugan\AppData\Roaming\npm\railway.cmd`. |
 | Railway CLI authenticated | Done | `railway whoami --json` succeeded on 2026-06-05. |
-| Current directory linked to Railway context | Done | `railway status --json` succeeded on 2026-06-05 for project `gracious-surprise`. |
+| Current directory linked to Railway context | Done | `railway status --json` succeeded. Initial read-only validation saw project `gracious-surprise`; current linked proof context is `internal-llm-gateway-phase0`. |
 | Project/environment/service visibility | Done | `railway service list --json` returned four services: `erpnext-docker`, `mariadb`, `redis-cache`, and `redis-queue`. |
 | Latest deployment status visibility | Done | Latest deployment status is `SUCCESS` for `erpnext-docker`, `mariadb`, `redis-cache`, and `redis-queue`. |
 | Disposable Phase 0 project created | Done | Project `internal-llm-gateway-phase0` was created and linked on 2026-06-05. Project ID: `c642da87-d8e5-40ec-ba54-bcd02ec1c64b`. |
@@ -77,22 +77,22 @@ The linked Railway integration is readable and currently healthy for the linked 
 
 ## Static egress assessment
 
-**Status:** In progress.
+**Status:** Done for Phase 0 OpenAI proof; additional providers deferred until staging/production provider selection.
 
 The provider list is not confirmed. For each approved provider, record:
 
 | Provider | Static egress allowlisting required? | Evidence source | Decision |
 | --- | --- | --- | --- |
 | OpenAI | Not required for Phase 0 proof | Direct `/v1/models` returned 200 from the injected key path; LiteLLM requests reach OpenAI | Done for Phase 0; revisit before production |
-| Anthropic | Unconfirmed | Pending provider/account check | Blocked |
-| Fireworks AI | Unconfirmed | Pending provider/account check | Blocked |
-| Perplexity | Unconfirmed | Pending provider/account check | Blocked |
+| Anthropic | Unconfirmed | Deferred until selected for staging/production | Deferred |
+| Fireworks AI | Unconfirmed | Deferred until selected for staging/production | Deferred |
+| Perplexity | Unconfirmed | Deferred until selected for staging/production | Deferred |
 
 If any required provider needs static egress allowlisting that Railway cannot satisfy for this design, pause implementation and redesign egress before proceeding.
 
 ## Budget and alert threshold proposal
 
-**Status:** Blocked on operator/product decision.
+**Status:** Done for Phase 0; durable budgets deferred until staging/production.
 
 Record approved values before live proof:
 
@@ -117,7 +117,7 @@ Recommended Phase 0 defaults for approval:
 
 ## Access groups proposal
 
-**Status:** Blocked on IdP decision.
+**Status:** Done for Phase 0; durable IdP/group mapping deferred until staging/production.
 
 | Role | Proposed IdP/group source | Status |
 | --- | --- | --- |

@@ -1,6 +1,6 @@
 # Internal LLM Gateway implementation roadmap
 
-**Status:** Phase 0 in progress - read-only Railway validation and launch-blocker intake  
+**Status:** Phase 0 in progress - Railway/LiteLLM proof deployed; final provider-backed chat and streaming blocked by OpenAI credits  
 **Date:** 2026-06-05  
 **Product:** Internal LLM Gateway  
 **Production target:** Railway  

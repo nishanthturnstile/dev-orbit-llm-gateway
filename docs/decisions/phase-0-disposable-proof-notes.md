@@ -17,7 +17,7 @@ Provisioning inputs and current approval status:
 | Railway workspace and billing confirmation | Done for Phase 0; durable billing revisited before staging |
 | Public-origin LiteLLM-native-auth risk acceptance | Done for Phase 0 |
 | Admin UI exposure/control decision | Done for Phase 0; strong LiteLLM admin credentials, staging/production hardening deferred |
-| Low-cost provider/model selected and secret placed outside source control | In progress; OpenAI `gpt-4o-mini` / `dev-fast` selected, valid key injected, credits unavailable |
+| Low-cost provider/model selected and secret placed outside source control | Done for Phase 0 config; OpenAI `gpt-4o-mini` / `dev-fast` selected, valid key injected, credits unavailable |
 | Proof spike budget cap | Done for Phase 0; USD 5 cap, USD 3 warning review |
 | Teardown owner and deadline | Done; operator/project owner, within 24 hours after funded validation or by 2026-06-13 if deferred |
 

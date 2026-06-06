@@ -1,6 +1,6 @@
 # Public-origin LiteLLM risk acceptance
 
-**Status:** In progress; selected for Phase 0/MVP, controls pending approval  
+**Status:** Approved for Phase 0; selected for MVP direction, staging/production controls must be revisited  
 **Date opened:** 2026-06-05  
 **Related tracker:** `docs\operations\implementation-status.md`
 
