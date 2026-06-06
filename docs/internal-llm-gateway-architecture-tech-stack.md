@@ -5,12 +5,13 @@
 **Product:** Internal LLM Gateway  
 **Production target:** Railway  
 **Product reference:** `docs\internal-llm-gateway-product-plan.md`
+**Implementation roadmap:** `docs\internal-llm-gateway-implementation-roadmap.md`
 
 ## 1. Purpose
 
 This document is the technical source of truth for the Internal LLM Gateway architecture, service topology, technology choices, configuration boundaries, and implementation rules.
 
-The system is a Railway-hosted, LiteLLM-first internal gateway. Cloudflare Tunnel and Cloudflare Access provide public ingress and access control. LiteLLM Proxy provides OpenAI-compatible routing, model aliases, virtual keys, budgets, spend tracking, and the v1 Admin UI. Railway managed Postgres stores LiteLLM state.
+The system is a Railway-hosted, LiteLLM-first internal gateway. LiteLLM native authentication provides the Phase 0/MVP public API access layer through a Railway public/custom domain. LiteLLM Proxy provides OpenAI-compatible routing, model aliases, virtual keys, budgets, rate limits, spend tracking, and the v1 Admin UI. Railway managed Postgres stores LiteLLM state. Cloudflare Tunnel, Cloudflare Access, WAF, or an edge origin guard are deferred hardening options.
 
 ## 2. Target architecture
 
@@ -25,7 +26,7 @@ Use separate Railway variables per environment. Staging must not inherit:
 
 - Production provider keys.
 - Production LiteLLM master key.
-- Production Cloudflare Access AUD values.
+- Optional Cloudflare Access AUD values if Cloudflare hardening is added later.
 - Production backup bucket credentials.
 - Production virtual keys.
 
@@ -33,8 +34,7 @@ Use separate Railway variables per environment. Staging must not inherit:
 
 | Service | Type | Public? | Purpose |
 | --- | --- | ---: | --- |
-| `cloudflared-tunnel` | App service from pinned `cloudflared` image/Dockerfile | No Railway public domain | Outbound-only connector from Railway private network to Cloudflare. Publishes approved hostnames through Cloudflare Tunnel. |
-| `litellm-proxy` | App service from pinned LiteLLM image/Dockerfile | No Railway public domain | LiteLLM Proxy core and built-in Admin UI. Private-only origin, reached through the tunnel. |
+| `litellm-proxy` | App service from pinned LiteLLM image/Dockerfile | Yes, public Railway/custom domain | LiteLLM Proxy core, OpenAI-compatible API, native auth, budgets, rate limits, and built-in Admin UI. |
 | `litellm-postgres` | Railway managed Postgres | No public app ingress | LiteLLM users, virtual keys, budgets, spend, teams, and metadata. |
 | `backup-worker` | Scheduled app service | No Railway public domain | Runs logical `pg_dump` backups for LiteLLM Postgres and ships encrypted/versioned copies off Railway. |
 | `litellm-redis` | Deferred Railway managed Redis | No public app ingress | Add only when multiple LiteLLM replicas, distributed rate limiting, or shared cache state are required. |
@@ -45,20 +45,18 @@ Deferred from v1:
 - `admin-api`
 - `admin-web`
 - `admin-postgres`
-- `llm-edge` / Envoy origin guard, unless Cloudflare Tunnel cannot satisfy the production proof gates
+- `cloudflared-tunnel`, Cloudflare Access/WAF, or `llm-edge` / Envoy origin guard unless public-origin risk or production requirements justify them
 
 ### 2.3 Public LLM API flow
 
 For `llm.thaarei.com`:
 
-1. Client tool sends request through Cloudflare.
-2. Cloudflare Access validates a service token, a tested local wrapper flow, or another approved Access policy.
-3. Cloudflare Tunnel forwards the request over the outbound `cloudflared-tunnel` connection.
-4. The request reaches private `litellm-proxy`; no public Railway domain exists for LiteLLM.
-5. `litellm-proxy` validates the LiteLLM virtual key in `Authorization: Bearer ...`.
-6. LiteLLM checks model access, budget, rate limits, routing, fallbacks, cache policy, and provider credentials.
+1. Client tool sends request to the public Railway/custom LiteLLM endpoint.
+2. `litellm-proxy` validates the LiteLLM virtual key in `Authorization: Bearer ...`.
+3. LiteLLM checks model access, budget, per-key rate limits, routing, fallbacks, cache policy, and provider credentials.
+4. LiteLLM emits metadata-only operational logs and spend metrics.
 
-Developer traffic should be limited by Cloudflare Access/WAF rules and LiteLLM auth to required OpenAI-compatible routes, for example:
+Developer traffic should be limited by LiteLLM auth, budgets, and rate limits to required OpenAI-compatible routes, for example:
 
 - `/v1/chat/completions`
 - `/v1/completions` if needed by a supported client
@@ -67,21 +65,21 @@ Developer traffic should be limited by Cloudflare Access/WAF rules and LiteLLM a
 - `/chat/completions` only if a client cannot use `/v1/chat/completions`
 - `/embeddings` only if a client cannot use `/v1/embeddings`
 
-Developer traffic must not be allowed to use LiteLLM admin/control routes such as `/ui`, `/key/*`, `/user/*`, `/team/*`, `/config/*`, or `/admin*`.
+Developer virtual keys must not be able to use LiteLLM admin/control routes such as `/ui`, `/key/*`, `/user/*`, `/team/*`, `/config/*`, or `/admin*`. Because the origin is public, the Admin UI/login surface and docs/Swagger exposure must be explicitly locked down before production.
 
 ### 2.4 Admin flow
 
-For `admin.thaarei.com` or an equivalent admin hostname/path:
+For `admin.thaarei.com`, the Railway public domain, or an equivalent admin hostname/path:
 
-1. Admin or lead opens LiteLLM's built-in Admin UI through Cloudflare Access human login.
-2. Cloudflare Access allows only approved admin/lead identities or groups.
-3. Cloudflare Tunnel forwards the request to private `litellm-proxy`.
-4. LiteLLM UI/RBAC handles users, teams, virtual keys, budgets, spend, model aliases, and admin operations.
-5. Company-specific onboarding, alias guidance, and policy text live in repo docs/wiki unless a later custom portal is approved.
+1. Admin or lead opens LiteLLM's built-in Admin UI.
+2. LiteLLM native login/RBAC, strong admin credentials, or LiteLLM-supported SSO gates admin access.
+3. LiteLLM UI/RBAC handles users, teams, virtual keys, budgets, spend, model aliases, and admin operations.
+4. Company-specific onboarding, alias guidance, and policy text live in repo docs/wiki unless a later custom portal is approved.
+
+If the public Admin UI exposure is not acceptable, add Cloudflare Access or another identity-aware gate specifically for the admin surface before production.
 
 ### 2.5 Private traffic
 
-- `cloudflared-tunnel` -> `litellm-proxy` over Railway private networking.
 - `litellm-proxy` -> `litellm-postgres` using private/internal Railway variables.
 - `litellm-proxy` -> `litellm-redis` only if Redis is added later.
 - `backup-worker` -> `litellm-postgres` using private/internal Railway variables.
@@ -105,14 +103,14 @@ Browser code must never receive:
 | Admin surface | LiteLLM built-in Admin UI | Covers keys, users, teams, budgets, spend, aliases, and model management without a custom product. |
 | Gateway state database | Railway managed Postgres | Stores LiteLLM users, teams, virtual keys, budgets, spend, and metadata. |
 | Optional shared state/cache | Railway managed Redis | Deferred until multiple replicas, distributed rate limiting, or shared cache state are required. |
-| Public ingress/origin guard | Cloudflare Tunnel (`cloudflared`) + Cloudflare Access | Publishes the service without a public Railway origin and supports separate API/admin access policies. |
-| Deferred edge fallback | Envoy Proxy | Use only if Cloudflare Tunnel cannot meet proof gates; production-grade JWT/path/streaming proxy but more operational work. |
+| Public ingress/auth | Railway public/custom domain + LiteLLM native auth | Simplest MVP path; LiteLLM virtual keys, budgets, rate limits, and RBAC protect the public API. |
+| Deferred edge/origin hardening | Cloudflare Tunnel/Access/WAF or Envoy Proxy | Add if public-origin risk, SSO, WAF, or path-level origin protection becomes required. |
 | Key request workflow | GitHub Issues/Actions or Slack Workflow | Lightweight enough for 10-15 developers; avoids a custom portal/database. |
 | Onboarding/docs | Repo docs, wiki, MkDocs, or Docusaurus | Static policy and alias docs are enough for v1. |
 | Smoke/API tests | pytest + httpx | Stable Python test stack for OpenAI-compatible API checks. |
 | Secret scanning | Gitleaks | OSS secret detection in CI and local checks. |
 | Image/security scanning | Trivy + cosign | Useful hardening; keep image pinning mandatory, make heavier gating dependent on compliance needs. |
-| Monitoring/alerts | LiteLLM Prometheus metrics + Grafana/Alertmanager, Uptime Kuma, Better Stack, or equivalent | Budget, error, backup, tunnel, and provider alerts are required before production. |
+| Monitoring/alerts | LiteLLM Prometheus metrics + Grafana/Alertmanager, Uptime Kuma, Better Stack, or equivalent | Budget, auth-failure, public-origin abuse, backup, and provider alerts are required before production. |
 | Observability optional | Langfuse, OpenTelemetry Collector, Grafana/Tempo/Loki/SigNoz | Add if LiteLLM metrics and metadata-only logs are not enough. |
 | Backups | `pg_dump` + rclone/awscli | Stable logical backups to R2/S3/B2. |
 
@@ -209,23 +207,27 @@ Required variables:
 - `PERPLEXITY_API_KEY`: sealed.
 - `PROXY_BASE_URL`: public LLM API URL, for metadata only.
 - `ENVIRONMENT`: `staging` or `production`.
+- Admin UI credentials or LiteLLM SSO settings, sealed where applicable.
+- Rate-limit and budget policy variables/config.
 
-Do not expose a public Railway domain for this service.
+The service may expose a public Railway/custom domain only after LiteLLM native authentication, admin controls, budgets, rate limits, metadata-only logging, and secret handling are configured.
 
-### 5.2 `cloudflared-tunnel`
+### 5.2 Deferred `cloudflared-tunnel`
 
-Required variables:
+Only add this service later if Cloudflare Tunnel/Access is reintroduced as an origin guard or admin/API hardening layer.
+
+Required variables if implemented:
 
 - `CLOUDFLARE_TUNNEL_TOKEN`: sealed.
 - `LITELLM_PRIVATE_BASE_URL`
 - `TUNNEL_LOG_LEVEL`
 - `ENVIRONMENT`
 
-This service must not expose a public Railway domain. Cloudflare owns public DNS and Access policies.
+This service must not expose a public Railway domain. Cloudflare would own public DNS and Access policies if this hardening path is adopted.
 
 ### 5.3 Deferred `llm-edge` fallback
 
-Only needed if Cloudflare Tunnel cannot satisfy the proof gates.
+Only needed if LiteLLM-native public-origin auth is not sufficient and an edge origin guard is approved.
 
 Required variables if implemented:
 
@@ -315,31 +317,30 @@ Backup credentials must be scoped only to the backup bucket/prefix.
 - If Redis is added, use a short auth-cache TTL to balance performance with revocation responsiveness.
 - Test streaming explicitly because IDE tools often depend on it.
 
-### 6.3 Cloudflare-specific rules
+### 6.3 Public-origin and optional Cloudflare rules
 
-- Use Cloudflare Tunnel as the preferred public ingress path.
-- Use Access human policies for LiteLLM Admin UI.
-- Use Access service tokens or a tested wrapper for developer tool/API traffic.
-- If a fallback `llm-edge` is introduced, validate Access JWT at origin.
-- Remove or block direct Railway origin domains.
-- Configure host/path policy so developer API service-token users cannot access LiteLLM Admin UI or admin/control routes.
-- Test streaming through Cloudflare.
-- Document service-token renewal and revocation.
-- Avoid WAF body-inspection rules that break code/prose prompts on `/v1/chat/completions`.
+- LiteLLM-native auth is the approved Phase 0/MVP public-origin control.
+- Do not expose the public LiteLLM service until virtual-key auth, admin controls, budgets, rate limits, and metadata-only logging are configured.
+- Disable public docs/Swagger where supported.
+- Confirm developer virtual keys cannot access LiteLLM Admin UI or admin/control routes.
+- Alert on repeated 401/403 responses, spend spikes, provider errors, and gateway 5xx.
+- If Cloudflare Tunnel/Access/WAF is added later, document service-token renewal and revocation, validate streaming through Cloudflare, and avoid WAF body-inspection rules that break code/prose prompts on `/v1/chat/completions`.
 
 ## 7. Security controls
 
 Mandatory controls:
 
-- No direct public LiteLLM origin.
-- Cloudflare Tunnel as default ingress.
-- Cloudflare Access on all public hostnames.
-- Separate Access policies for developer API traffic and LiteLLM Admin UI.
-- Developer API users cannot access LiteLLM admin/control routes.
+- Public LiteLLM origin is allowed only with explicit risk acceptance and documented compensating controls.
+- LiteLLM virtual-key authentication on all developer API traffic.
+- Strong admin credentials or LiteLLM-supported SSO for the Admin UI.
+- Developer virtual keys cannot access LiteLLM admin/control routes.
+- Public docs/Swagger disabled where supported.
 - LiteLLM virtual keys per developer.
 - Per-key budget windows: daily and monthly.
+- Per-key rate limits and max request/concurrency limits.
 - Company-level budget ceiling.
 - Budget/spend spike alerts before production.
+- Alerts for 401/403 spikes and public-origin abuse signals.
 - Model alias restrictions.
 - Same-tier failover only.
 - Provider keys server-side only.
@@ -374,331 +375,21 @@ Create runbooks under `docs\runbooks` for:
 - Staging deployment.
 - Production deployment.
 - Rollback.
-- Cloudflare Tunnel and Access setup.
-- Cloudflare service-token rotation.
+- Optional Cloudflare Tunnel/Access/WAF or edge origin-guard setup, only if that hardening layer is introduced.
+- Optional Cloudflare/edge service-token rotation, only if that hardening layer is introduced.
 - LiteLLM virtual-key creation.
 - LiteLLM virtual-key revocation.
 - Provider key rotation.
 - Budget increase approval.
 - Budget/spend alert response.
 - LiteLLM Postgres outage.
-- Cloudflare Tunnel outage.
+- Optional Cloudflare/edge outage, only if that hardening layer is introduced.
 - Provider outage and same-tier fallback validation.
 - Railway backup restore.
 - Off-platform logical backup restore.
 - Prompt/log leakage investigation.
 - Supported developer tool setup.
 
-## 10. Implementation sequence
+## 10. Implementation roadmap
 
-This section remains here until a dedicated implementation roadmap document is created.
-
-### Phase 0 - Launch-blocker validation
-
-Goal: close the decisions that can invalidate the Railway production design before building the full repo.
-
-Tasks:
-
-- Confirm Railway workspace, billing plan, target region, and expected monthly platform cost.
-- Confirm Cloudflare zone ownership, Zero Trust availability, and Cloudflare Tunnel availability.
-- Confirm domain names:
-    - `llm.thaarei.com` for developer API traffic.
-    - `admin.thaarei.com` or an equivalent admin hostname/path for LiteLLM Admin UI.
-- Confirm provider accounts: OpenAI, Anthropic, Fireworks AI, Perplexity, or the final approved provider list.
-- Confirm whether any provider requires static egress IP allowlisting. If yes, pause and redesign egress before proceeding.
-- Confirm initial company monthly budget, per-developer budget, and budget alert thresholds.
-- Confirm IdP/group source for admin/lead/developer access.
-- Confirm secure virtual-key distribution and revocation process.
-- Confirm log retention and metadata-only logging policy.
-- Confirm initial SLA target: best-effort internal, business-hours critical, or higher.
-- Confirm max request body, timeout, and streaming limits.
-- Stand up a temporary staging proof using LiteLLM, Postgres, Cloudflare Tunnel, and one low-cost provider/model.
-- Prove one primary developer tool can call `/v1/chat/completions` with Cloudflare Access plus LiteLLM virtual key, including streaming.
-
-Exit criteria:
-
-- Cloudflare Tunnel works from Railway to private LiteLLM without a public Railway LiteLLM domain.
-- `/v1` access strategy is proven with at least one real developer tool.
-- Any tool requiring a local header-injecting wrapper is documented.
-- Any virtual-key-only public fallback is rejected or documented as a temporary risk exception with owner, budget limits, monitoring, and expiry.
-- The team agrees the MVP uses LiteLLM Admin UI, not a custom admin portal.
-
-### Phase 1 - Scratch repository scaffold
-
-Goal: create a clean MVP repo with service boundaries, docs, CI, and secret hygiene.
-
-Tasks:
-
-- Create the repository structure in section 4.
-- Add `.gitignore`, `.env.example`, root README, and contribution workflow.
-- Add service README files explaining boundaries.
-- Add docs homes for decisions, runbooks, onboarding, security, and operations.
-- Add LiteLLM config linting scripts.
-- Add Gitleaks or equivalent secret scanning.
-- Add initial CI for static checks, config linting, and secret scanning.
-
-Exit criteria:
-
-- The repo documents Railway + Cloudflare Tunnel + LiteLLM architecture, service boundaries, and deferred components.
-- CI fails on committed secrets or forbidden config patterns.
-
-### Phase 2 - Railway staging services
-
-Goal: create a production-like staging environment before production resources are created.
-
-Tasks:
-
-- Create Railway project.
-- Create `staging` environment.
-- Add managed Postgres for LiteLLM.
-- Add app services: `litellm-proxy`, `cloudflared-tunnel`, `backup-worker`.
-- Confirm Postgres variables generated by Railway.
-- Prefer private/internal connection variables.
-- Never use public TCP proxy URLs from app services.
-- Remove/avoid public domains from `litellm-proxy`, Postgres, and backup worker.
-- Configure service root directories and watch paths.
-
-Exit criteria:
-
-- Staging services exist.
-- Private networking works between `cloudflared-tunnel`, `litellm-proxy`, Postgres, and backup worker.
-- Staging variables do not include production secrets.
-
-### Phase 3 - LiteLLM service and policy-as-code
-
-Goal: deploy a private-only LiteLLM Proxy service with stable model aliases and safe defaults.
-
-Tasks:
-
-- Create `services\litellm\Dockerfile` from a pinned LiteLLM database-capable image digest.
-- Copy `config.yaml` into the image.
-- Set `PORT=4000` or start command compatible with Railway's injected `PORT`.
-- Configure Railway healthcheck path `/health/readiness` with sufficient timeout.
-- Do not use `--detailed_debug` in production.
-- Set `DATABASE_URL` from `litellm-postgres`.
-- Set provider keys as sealed Railway variables.
-- Set `LITELLM_MASTER_KEY` as sealed Railway variable starting with `sk-`.
-- Define aliases:
-    - `dev-fast`
-    - `dev-code`
-    - `dev-reasoning`
-    - `dev-long-context`
-    - `batch-analysis`
-    - `dev-search`
-    - `dev-embed`
-    - `dev-vision`
-- Do not define `sensitive-code`.
-- Use same-tier fallbacks only.
-- Set explicit timeouts and retry limits to avoid runaway costs during outages.
-- Set metadata-only logging:
-    - message logging off
-    - user key info redacted where supported
-    - health details hidden
-    - no raw prompt/response logging by default
-- Keep response caching default-off for code prompts.
-- Add CI lint for:
-    - forbidden provider domains/CN-hosted endpoints
-    - `sensitive-*` aliases
-    - debug flags
-    - plaintext keys
-    - missing env references
-
-Exit criteria:
-
-- LiteLLM starts in staging.
-- Readiness healthcheck passes.
-- `/health` deep model probe is not used for Railway deployment healthcheck.
-- Direct public access to `litellm-proxy` is impossible.
-- LiteLLM Admin UI works for approved admins/leads through Cloudflare Access.
-
-### Phase 4 - Cloudflare Tunnel and Access
-
-Goal: make the public LLM API and admin UI reachable only through Cloudflare.
-
-Tasks:
-
-- Configure Cloudflare DNS for developer and admin hostnames.
-- Configure Cloudflare Tunnel to route public hostnames to private `litellm-proxy`.
-- Configure Cloudflare Access service-token policy for developer tool/API traffic.
-- Configure Cloudflare Access human policy for LiteLLM Admin UI.
-- Configure path/hostname rules so developer API traffic cannot use LiteLLM admin/control routes:
-    - `/ui`
-    - `/key/*`
-    - `/user/*`
-    - `/team/*`
-    - `/config/*`
-    - `/admin*`
-    - Swagger/admin docs routes unless explicitly protected
-- Preserve LiteLLM virtual-key `Authorization` header.
-- Support streaming/SSE end-to-end.
-- Configure tunnel degraded/down notifications.
-
-Exit criteria:
-
-- Anonymous request to `llm.thaarei.com` is blocked.
-- Request with Cloudflare service token but no LiteLLM virtual key is blocked by LiteLLM.
-- Request with valid Cloudflare service token and valid LiteLLM virtual key succeeds.
-- Direct Railway-domain bypass fails because no public Railway LiteLLM domain exists.
-- Streaming completion works through Cloudflare Tunnel and LiteLLM.
-- Admin UI is available only to approved human users.
-
-### Phase 5 - Backups, restore, and alerting baseline
-
-Goal: make production state recoverable and spend failures visible before real usage.
-
-Tasks:
-
-- Enable Railway native volume backups on LiteLLM Postgres.
-- Configure daily, weekly, and monthly backup schedules.
-- Create `backup-worker` scheduled job for logical backups:
-    - `pg_dump` LiteLLM Postgres
-    - encrypt/compress
-    - upload to R2/S3/B2 with versioning
-    - log metadata only
-- Create restore runbook:
-    - restore Railway volume snapshot
-    - restore logical backup into new Postgres service
-    - repoint `DATABASE_URL`
-    - verify LiteLLM virtual key auth
-    - reconcile revoked keys after restore
-- Add key rotation runbooks:
-    - provider keys
-    - Cloudflare service tokens
-    - LiteLLM master/admin credential
-    - developer virtual keys
-- Add outage runbooks:
-    - provider outage
-    - Postgres outage
-    - Railway deploy rollback
-    - bad LiteLLM config rollback
-    - Cloudflare Tunnel outage
-- Add alerts:
-    - company budget threshold
-    - per-key spend spike
-    - provider error rate
-    - LiteLLM 5xx/error rate
-    - tunnel degraded/down
-    - backup failure
-
-Exit criteria:
-
-- Backup job succeeds in staging.
-- Restore drill succeeds before production launch.
-- RPO/RTO are documented.
-- Budget/error/tunnel/backup alerts are configured.
-
-### Phase 6 - CI/CD and security gates
-
-Goal: make bad config and unsafe secrets fail before deployment.
-
-Tasks:
-
-- Add LiteLLM config CI:
-    - YAML parse
-    - required aliases
-    - no `sensitive-*`
-    - no provider denylist domains
-    - no plaintext keys
-    - no debug flags
-    - env refs for secrets
-- Add secret scan:
-    - Gitleaks
-    - custom provider-key patterns
-- Add image checks:
-    - LiteLLM image pinned by digest
-    - Trivy/cosign if compliance or team policy requires them
-- Add staging deployment workflow or documented Railway CLI deployment procedure.
-- Add smoke test workflow against staging after deploy.
-
-Exit criteria:
-
-- Unsafe config cannot merge.
-- Staging deploy can be reproduced from a clean checkout.
-- Production deploy uses the same artifacts/config that passed staging.
-
-### Phase 7 - Staging validation proof gates
-
-Goal: prove Railway + Cloudflare + LiteLLM behavior before production.
-
-Mandatory smoke tests:
-
-- `GET /health/readiness` passes for private LiteLLM.
-- Anonymous public request to `llm.thaarei.com` is blocked.
-- Direct Railway-domain bypass fails.
-- Valid Cloudflare service token plus valid LiteLLM virtual key can call `/v1/chat/completions`.
-- Invalid LiteLLM key is blocked.
-- Valid LiteLLM key without Cloudflare Access is blocked.
-- `/v1/models` exposes aliases, not provider credentials.
-- Disallowed model/provider names are blocked for developer keys.
-- Per-key daily/monthly budget windows block over-budget requests.
-- Same-tier fallback works for a controlled simulated provider failure.
-- No fallback silently downgrades premium aliases to weaker tiers.
-- Streaming SSE works through Cloudflare Tunnel and LiteLLM.
-- Response cache remains off for code prompts unless explicitly requested and policy-allowed.
-- Railway logs do not contain known prompt/response sentinel strings.
-- LiteLLM Admin UI is not accessible to developer API service-token users.
-- Backup worker creates off-platform logical backups.
-- Restore drill works into a fresh staging database.
-- Provider key rotation runbook works for one provider.
-- Cloudflare service token rotation runbook works.
-
-Exit criteria:
-
-- All mandatory smoke tests pass.
-- At least one primary developer tool works end-to-end with the required Cloudflare + LiteLLM auth path.
-- Blocked tools are documented and excluded from launch.
-
-### Phase 8 - Production deployment and pilot
-
-Goal: promote the proven staging stack to production and operate a small pilot.
-
-Tasks:
-
-- Create `production` Railway environment only after staging proof gates pass.
-- Create production Railway variables from approved secret store/operator input.
-- Deploy pinned artifacts/images to production.
-- Configure production Cloudflare Tunnel, Access policies, service tokens, and domains.
-- Confirm no unused/default public Railway domains exist.
-- Enable backups and backup worker.
-- Run production smoke tests with low-cost model/provider calls.
-- Create initial admin/lead users in LiteLLM.
-- Create initial developer virtual keys.
-- Apply per-developer budgets and allowed aliases.
-- Document supported tool setup.
-- Announce production usage rules:
-    - no sensitive/client/private/production incident content
-    - use aliases only
-    - report failures with LiteLLM call ID
-    - do not share virtual keys
-- Onboard a small pilot cohort.
-- Monitor spend, errors, latency, provider failures, cache behavior, and budget hits.
-- Review Railway CPU/memory/network/disk metrics.
-- Review LiteLLM spend/user/team metadata.
-- Review Cloudflare Access logs for denied/bypassed attempts.
-- Tune aliases and budgets based on real usage.
-- Expand supported tools only after compatibility tests.
-
-Exit criteria:
-
-- Production endpoint works through Cloudflare only.
-- LiteLLM Admin UI works through Cloudflare only.
-- Initial users can make approved requests.
-- Budgets and model restrictions are enforced.
-- Backups are running.
-- Restore path has been tested in staging and documented for production.
-- Pilot users can use the gateway day-to-day for approved non-sensitive work.
-
-## 11. First implementation order
-
-Start implementation in this order:
-
-1. Close Phase 0 decisions and proofs, especially Cloudflare Tunnel and `/v1` auth/tool compatibility.
-2. Create the scratch repo structure and CI secret/config gates.
-3. Provision Railway staging only.
-4. Deploy private LiteLLM with placeholder/low-cost provider config.
-5. Add Cloudflare Tunnel and prove direct Railway-origin bypass is impossible.
-6. Prove one real client can call `/v1/chat/completions` with Cloudflare Access plus LiteLLM auth, including streaming.
-7. Configure LiteLLM Admin UI behind Cloudflare Access for admins/leads.
-8. Add backups, alerts, and restore drill.
-9. Run full staging proof gates.
-10. Only then create production variables and deploy production.
+The phase-wise implementation plan lives in `docs\internal-llm-gateway-implementation-roadmap.md`.
