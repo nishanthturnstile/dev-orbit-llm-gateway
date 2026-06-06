@@ -30,6 +30,7 @@ paths = [
   '''scripts/check-secrets\.ps1''',
   '''scripts/phase0-validate-litellm\.ps1''',
   '''scripts/validate-litellm-config\.py''',
+  '''__pycache__/.*\.pyc$''',
 ]
 
 [[rules]]

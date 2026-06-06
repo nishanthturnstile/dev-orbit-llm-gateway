@@ -1,6 +1,6 @@
 # Internal LLM Gateway implementation roadmap
 
-**Status:** Phase 0 in progress - Railway/LiteLLM proof deployed; final provider-backed chat and streaming blocked by OpenAI credits  
+**Status:** Phase 5 blocked - LiteLLM staging deployment and runtime policy validation passed except `dev-search`, which reaches Perplexity but fails with the staged provider key
 **Date:** 2026-06-05  
 **Product:** Internal LLM Gateway  
 **Production target:** Railway  
@@ -436,7 +436,7 @@ This phase creates real staging. It is separate from the disposable Phase 0 proo
 
 ### Goal
 
-Deploy public-origin LiteLLM in staging and prove that native-auth runtime behavior matches the policy/config authored earlier.
+Deploy LiteLLM in staging and prove that native-auth runtime behavior matches the policy/config authored earlier. Durable public-origin exposure is deferred to Phase 6.
 
 This phase owns deployment and runtime validation. It does not redefine aliases or policy outside the committed config artifacts.
 
@@ -448,10 +448,11 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
 
 ### Scope
 
-- Deploy `litellm-proxy` to Railway staging.
-- Set `DATABASE_URL` from `litellm-postgres` private/internal connection values.
-- Set provider keys as sealed Railway variables.
+- Deploy `litellm-proxy` to Railway staging without a durable public URL.
+- Set `DATABASE_URL` from the actual Railway Postgres service reference `${{Postgres.DATABASE_URL}}`.
+- Set approved provider keys as sealed Railway variables.
 - Set `LITELLM_MASTER_KEY` as sealed Railway variable starting with `sk-`.
+- Set `LITELLM_SALT_KEY` as sealed Railway variable before first boot while `store_model_in_db: true` remains enabled.
 - Set `PORT=4000` or start command compatible with Railway's injected `PORT`.
 - Validate `/health/readiness`.
 - Confirm `/health` deep provider probe is not used for Railway deployment healthcheck.
@@ -461,7 +462,7 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
     - `dev-reasoning`
     - `dev-long-context`
     - `batch-analysis`
-    - `dev-search`
+    - `dev-search` remains present but runtime validation is blocked until a valid approved `PERPLEXITY_API_KEY` is sealed and loaded.
     - `dev-embed`
     - `dev-vision`
 - Validate `sensitive-code` is absent.
@@ -469,13 +470,13 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
 - Validate retries and timeouts.
 - Validate metadata-only logging.
 - Validate response cache remains default-off for code prompts.
-- Validate LiteLLM Admin UI works for approved admins/leads through the protected path once Cloudflare is configured.
+- Keep LiteLLM Admin UI disabled in Phase 5 and validate admin/control APIs through approved operator-context API calls.
 
 ### Deliverables
 
 - Staging LiteLLM deployment.
 - Staging LiteLLM config validation output.
-- Initial admin/lead setup notes.
+- Admin UI disabled posture notes.
 - Initial virtual-key creation procedure.
 - Runtime policy validation notes.
 
@@ -483,10 +484,10 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
 
 - LiteLLM starts in staging.
 - Readiness healthcheck passes.
-- Direct public access to `litellm-proxy` is impossible.
+- No durable public URL remains for `litellm-proxy`.
 - LiteLLM persists users, virtual keys, teams, budgets, and spend to Postgres.
 - Model aliases route to approved providers only.
-- Over-budget behavior can be tested with a controlled test key.
+- Budget/spend/revocation behavior is validated with controlled disposable keys under the approved Phase 5 validation spend cap.
 - Logs do not contain known prompt/response sentinel strings.
 
 ### Runbook/docs outputs

@@ -1,7 +1,7 @@
 # Implementation status tracker
 
 **Status date:** 2026-06-06
-**Current phase:** Phase 3 - CI/CD, secret scanning, and policy gates (Done)
+**Current phase:** Phase 5 - LiteLLM deployment and runtime policy validation (Blocked)
 **Primary roadmap:** `docs\internal-llm-gateway-implementation-roadmap.md`
 
 ## Status rules
@@ -23,9 +23,9 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | 1 | Repository and project structure | Done | Repository-only gate exception accepted while Phase 0 funded provider proof remains blocked. Structure/docs/placeholders added; no Railway/provider resources mutated. |
 | 2 | Local service scaffolding and policy/config authoring | Done | Local scaffolds, LiteLLM runtime config, policy metadata, smoke skeletons, and validation docs are complete. Local YAML/verifier/shell syntax/pytest validation passed. GPT-5.5 and Opus 4.8 reviews approved with no blockers. No Railway/provider/Cloudflare resources were mutated. |
 | 3 | CI/CD, secret scanning, and policy gates | Done | Local/CI enforcement scripts, GitHub Actions workflows, secret scanning, and image policy gates are complete. Local validation passed; GPT-5.5 approved as-is and Opus 4.8 approved with minor hardening notes that were addressed. No Railway/provider/Cloudflare/GitHub settings were mutated. |
-| 4 | Durable Railway staging provisioning | Not started | Depends on Phase 0 completion and Phase 3 safety gates. |
-| 5 | LiteLLM deployment and runtime policy validation | Not started | Depends on durable Railway staging. |
-| 6 | Public-origin hardening and access validation | Not started | Depends on staging LiteLLM native-auth deployment and public-origin risk acceptance. |
+| 4 | Durable Railway staging provisioning | Done | Durable Railway project `dev-orbit-llm-gateway` and `staging` environment exist. Managed Postgres is healthy; app service shells are sourceless, undeployed, and domainless. Local validation passed; GPT-5.5 and Opus 4.8 reviewed with no blockers. |
+| 5 | LiteLLM deployment and runtime policy validation | Blocked | `litellm-proxy` deployment `dceac0a0-a478-4bc4-991d-45b124f56358` is `SUCCESS` with one running replica and no public URL. Private validation passes for readiness, missing/invalid auth, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, RPM enforcement, Admin UI/docs/ReDoc/OpenAPI closure, admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, and fresh log hygiene. `dev-search` reaches Perplexity but fails with provider `401` because the staged `PERPLEXITY_API_KEY` is invalid. Staging secrets were exposed during validation readback and must be rotated before real use. |
+| 6 | Public-origin hardening and access validation | Not started | Blocked until Phase 5 has a valid `PERPLEXITY_API_KEY` or an explicit decision removes/defer-gates `dev-search`, and exposed staging secrets are rotated or explicitly risk-accepted. |
 | 7 | Backups, restore, alerts, and runbooks | Not started | Depends on staging services and backup target decisions. |
 | 8 | Staging proof gates and client compatibility | Not started | Depends on deployed staging stack. |
 | 9 | Production deployment, cutover, and pilot | Not started | Depends on all staging proof gates. |
@@ -36,10 +36,10 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | ID | Roadmap item | Status | Evidence / blocker | Artifact |
 | --- | --- | --- | --- | --- |
 | P0-01 | Review Phase 0 plan with a second model before implementation. | Done | Opus 4.8 review completed on 2026-06-05; plan updated with a hard no-provisioning gate, decision/access intake, and deliverable mapping. | This file; `docs\decisions\phase-0-launch-blockers.md` |
-| P0-02 | Confirm Railway CLI access and current linked context using read-only validation. | Done | Railway CLI 5.3.0 is installed and authenticated. Initial read-only validation saw `gracious-surprise`; current linked proof context is `internal-llm-gateway-phase0` in workspace `muthurema's Projects`. | `docs\decisions\phase-0-launch-blockers.md` |
+| P0-02 | Confirm Railway CLI access and current linked context using read-only validation. | Done | Railway CLI 5.3.0 is installed and authenticated. Initial read-only validation saw `gracious-surprise`; the former proof context was `internal-llm-gateway-phase0`; the repository is now linked to durable project `dev-orbit-llm-gateway`. | `docs\decisions\phase-0-launch-blockers.md` |
 | P0-03 | Confirm Railway workspace, billing plan, target region, and expected monthly platform cost. | Done for Phase 0 | Workspace is `muthurema's Projects`; proof project is `internal-llm-gateway-phase0`; active services run in `asia-southeast1-eqsg3a`; operator approved a USD 5 proof cap. Durable staging/production billing must be revisited later. | `docs\decisions\phase-0-launch-blockers.md` |
 | P0-04 | Confirm public-origin LiteLLM-native-auth risk acceptance. | Done for Phase 0 | Operator approved public-origin LiteLLM-native auth defaults for Phase 0: risk owner/monitoring owner is operator/project owner, review by 2026-06-13 or immediately after funded validation, USD 5 cap, strict temporary key budget/rate limit, metadata-only logging, and strong admin credentials. | `docs\decisions\phase-0-launch-blockers.md`; `docs\decisions\public-origin-risk-acceptance.md` |
-| P0-05 | Confirm target domain names for developer API and admin UI. | Done for Phase 0 | Operator approved using the temporary Railway URL for Phase 0 and deferring custom API/admin domains until staging. Current proof URL: `https://litellm-proxy-production-bd81.up.railway.app`. | `docs\decisions\phase-0-launch-blockers.md` |
+| P0-05 | Confirm target domain names for developer API and admin UI. | Done for Phase 0 | Operator approved using the temporary Railway URL for Phase 0 and deferring custom API/admin domains until staging. The temporary proof URL belonged to the deleted disposable Phase 0 project. | `docs\decisions\phase-0-launch-blockers.md` |
 | P0-06 | Confirm provider accounts and low-cost proof model. | Done | OpenAI `gpt-4o-mini` / `dev-fast` selected. Credited OpenAI key validated through LiteLLM chat and streaming. | `docs\decisions\phase-0-launch-blockers.md`; `docs\decisions\phase-0-disposable-proof-notes.md` |
 | P0-07 | Confirm provider static egress IP allowlisting requirements. | Done | OpenAI `/v1/models` succeeds from the Railway-injected environment and LiteLLM requests reach OpenAI; no static egress blocker observed for the Phase 0 OpenAI proof. Additional providers must still be assessed before production use. | `docs\decisions\phase-0-launch-blockers.md` |
 | P0-08 | Confirm company budget, per-developer budget, and alert thresholds. | Done for Phase 0 | Operator approved Phase 0 proof budget defaults: USD 5 total cap, USD 3 warning review point, USD 5 hard stop/revoke point, temporary generated keys at USD 0.05 and 10 RPM. Durable company/developer budgets are deferred to staging. | `docs\decisions\phase-0-launch-blockers.md` |
@@ -52,7 +52,7 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | P0-15 | Prove one primary developer tool can call `/v1/chat/completions` with a LiteLLM virtual key. | Done | OpenAI-compatible validation script succeeds with generated LiteLLM virtual key and public Railway base URL. Operator accepted this as sufficient for Phase 2 planning; named developer-tool compatibility is deferred to Phase 8. | `docs\onboarding\supported-tools-matrix.md`; `docs\decisions\phase-2-developer-tool-validation-deferral.md` |
 | P0-16 | Prove streaming through the temporary public LiteLLM endpoint. | Done | OpenAI-compatible validation script returned `200` and received stream chunks through LiteLLM with a generated virtual key. | `docs\onboarding\supported-tools-matrix.md`; `docs\decisions\phase-0-disposable-proof-notes.md` |
 | P0-17 | Record public-origin LiteLLM-native-auth risk acceptance. | Done for Phase 0 | Public-origin risk acceptance values are recorded and approved for Phase 0 only; staging/production must revisit before durable rollout. | `docs\decisions\phase-0-launch-blockers.md`; `docs\decisions\public-origin-risk-acceptance.md` |
-| P0-18 | Tear down disposable proof resources or mark them non-production/non-staging. | Done | Disposable resources are explicitly marked Phase 0 only, not staging/production. Operator approved teardown within 24 hours after funded provider validation, or by 2026-06-13 if validation is deferred. | `docs\decisions\phase-0-disposable-proof-notes.md` |
+| P0-18 | Tear down disposable proof resources or mark them non-production/non-staging. | Done | Disposable resources were explicitly Phase 0 only. Railway accepted deletion for project `internal-llm-gateway-phase0` (`c642da87-d8e5-40ec-ba54-bcd02ec1c64b`); readback shows `deletedAt=2026-06-08T06:40:12.528Z`. | `docs\decisions\phase-0-disposable-proof-notes.md` |
 
 ## Phase 0 exit criteria tracker
 
@@ -66,7 +66,7 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | Public-origin risk is accepted with owner, budget limits, rate limits, monitoring, and review/expiry date. | Done for Phase 0 | Operator approved Phase 0 acceptance values: owner/monitoring owner is operator/project owner, review by 2026-06-13 or immediately after funded validation, USD 5 proof cap, temporary key budgets/rate limits, metadata-only logging, and strong admin credentials. |
 | Provider static egress IP requirements are confirmed. | Done | OpenAI key is recognized via direct `/v1/models`; no static egress blocker observed in Phase 0 tests. |
 | The team agrees the MVP uses LiteLLM Admin UI, not a custom admin portal. | Done for Phase 0 | Operator approved LiteLLM Admin UI for Phase 0 and MVP direction; custom admin portal remains deferred unless LiteLLM Admin UI proves insufficient. |
-| Disposable proof resources are torn down or explicitly marked non-production/non-staging. | Done | Resources remain only for Phase 0 validation, are not staging/production, and have an approved teardown deadline. |
+| Disposable proof resources are torn down or explicitly marked non-production/non-staging. | Done | Railway accepted deletion for the disposable Phase 0 project; readback shows a scheduled `deletedAt`. Durable staging is separate. |
 
 ## Phase 0 handoff before Phase 1
 
@@ -80,7 +80,7 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | Public-origin risk owner and review date | Done for Phase 0 | Operator/project owner owns risk and monitoring; review by 2026-06-13 or immediately after funded validation. |
 | Proof budget and alert thresholds | Done for Phase 0 | USD 5 total cap, USD 3 warning review, USD 5 hard stop/revoke point, generated proof keys at USD 0.05 and 10 RPM. |
 | Admin UI exposure/control decision | Done for Phase 0 | Strong LiteLLM admin credentials for Phase 0 only; SSO/edge gate decision deferred before staging/production. |
-| Teardown owner/deadline for Phase 0 resources | Done | Operator/project owner; teardown within 24 hours after funded provider validation, or by 2026-06-13 if validation is deferred. |
+| Teardown owner/deadline for Phase 0 resources | Done | Operator/project owner; Railway accepted deletion for the disposable proof project after funded validation. |
 | Phase 1 scope confirmation | Done | Operator accepted repository-only Phase 1 work before funded provider proof completion, with functional config/scripts/tests/CI deferred to Phase 2/3. Decision recorded in `docs\decisions\phase-1-repository-gate-exception.md`. |
 
 ## Phase 1 task tracker
@@ -152,6 +152,33 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | Image pinning checks run in CI. | Done | `image-policy.yml` runs the image policy checks; all service Dockerfiles are digest-pinned. |
 | Smoke-test workflow can be run once staging exists. | Done | `staging-smoke.yml` is validate-only in Phase 3 and calls `scripts\smoke-railway.ps1 -ValidateOnly`. |
 
+## Phase 4 task tracker
+
+| ID | Roadmap item | Status | Evidence / blocker | Artifact |
+| --- | --- | --- | --- | --- |
+| P4-01 | Review Phase 4 plan with GPT and Opus before implementation. | Done | GPT-5.5 and Opus 4.8 reviewed the plan. Feedback was incorporated: no source attachment, no app deployment, private-network proof deferred to Phase 5 runtime validation, and root build context retained for current Dockerfiles. | Session `plan.md` |
+| P4-02 | Create durable Railway project and persistent staging environment. | Done | Project `dev-orbit-llm-gateway` (`0b1bc0ec-4ace-47c3-bd13-214256c27ad5`) exists in workspace `muthurema's Projects`; persistent `staging` environment (`f188f687-8582-4308-9110-1d082dc31b89`) exists. Default `production` environment remains unused. | `config\railway\staging.md` |
+| P4-03 | Provision managed Postgres for LiteLLM state. | Done | Managed Postgres service `Postgres` (`1494db55-53c1-4ff1-bbe0-312340190eb7`) is deployed in staging with latest deployment `9187450c-4db4-4c43-bb79-5f1bc3611ffc` in `SUCCESS`; one replica is running and volume `postgres-volume` is ready. Railway template kept service name `Postgres`, so variable references use `${{Postgres.DATABASE_URL}}`. | `config\railway\staging.md` |
+| P4-04 | Create sourceless app service shells. | Done | `litellm-proxy` (`335b0f28-2d4c-42b7-b3c9-063bcf296a25`), `backup-worker` (`f1e6e49c-8320-4b30-a070-d59d285f520c`), and `cloudflared-tunnel` (`ec0b7723-219f-4f54-8896-3ed010ed1e3d`) exist with no source, no deployments, and no public URLs. | `config\railway\staging.md`; `docs\runbooks\railway-project-service-setup.md` |
+| P4-05 | Configure safe staging variables and service references. | Done | `litellm-proxy` has non-secret staging flags and `DATABASE_URL=${{Postgres.DATABASE_URL}}`; `backup-worker` has `LITELLM_DATABASE_URL=${{Postgres.DATABASE_URL}}`; no provider keys, LiteLLM master key, Cloudflare token, backup credentials, production secrets, or generated developer keys were set. | `config\railway\staging.md` |
+| P4-06 | Configure non-secret future deployment settings. | Done | App service shells have Dockerfile paths configured for future source attachment. `litellm-proxy` has healthcheck path `/health/readiness` and timeout `300`. Source remains unattached. | `config\railway\staging.md`; `docs\runbooks\staging-deployment.md` |
+| P4-07 | Add Phase 4 docs and runbooks. | Done | Staging config and runbooks document non-secret IDs, setup commands, shell-only boundary, safe variable references, public exposure closure, private-networking interpretation, and Phase 5 handoff. | `config\railway\staging.md`; `docs\runbooks\railway-project-service-setup.md`; `docs\runbooks\staging-deployment.md` |
+| P4-08 | Validate and review implementation. | Done | Railway readback confirms app shells are sourceless, undeployed, and domainless; Postgres is `SUCCESS`. Local gates passed. GPT-5.5 and Opus 4.8 reviewed with no material blockers; optional README status polish was applied. | This file |
+
+## Phase 4 exit criteria tracker
+
+| Exit criterion | Status | Evidence / blocker |
+| --- | --- | --- |
+| Durable Railway project exists separately from disposable Phase 0. | Done | Project `dev-orbit-llm-gateway` exists separately from Phase 0 project `internal-llm-gateway-phase0`. |
+| Persistent staging environment exists. | Done | Environment `staging` (`f188f687-8582-4308-9110-1d082dc31b89`) exists and is linked. |
+| Managed Postgres exists for LiteLLM state. | Done | `Postgres` service is deployed, `SUCCESS`, one replica running, volume ready. |
+| App service shells exist. | Done | `litellm-proxy`, `backup-worker`, and `cloudflared-tunnel` exist as sourceless shells. |
+| No app service is publicly exposed. | Done | Service readback shows no URL for app services; environment config shows zero service/custom domains for app services. |
+| No app service has source attached or deployment triggered. | Done | Service readback shows app service `source=null`, `deploymentId=null`, and `latestDeployment=null`. |
+| Private-network wiring is configured without public DB URLs. | Done with Phase 4 interpretation | App services reference `${{Postgres.DATABASE_URL}}`. Live app-to-DB proof is deferred to Phase 5 because app services intentionally do not run in Phase 4. |
+| Docs and runbooks are updated with non-secret evidence. | Done | `config\railway\staging.md`, `docs\runbooks\railway-project-service-setup.md`, and `docs\runbooks\staging-deployment.md` are updated. |
+| Final validation and GPT/Opus review are complete. | Done | Local validation passed; GPT-5.5 and Opus 4.8 reviewed with no blockers. |
+
 ## Latest Phase 0 technical validation
 
 Validated on 2026-06-06 without printing secrets:
@@ -173,3 +200,4 @@ Validated on 2026-06-06 without printing secrets:
 | Prompt sentinel logs | `phase0_no_log_sentinel_20260606` not found in latest 500 LiteLLM logs |
 | Valid developer key can call approved alias | Done; credited OpenAI-backed chat through LiteLLM returned `200` |
 | Valid developer key can stream chat completion | Done; credited OpenAI-backed streaming through LiteLLM returned `200` with stream chunks received |
+| Disposable project deletion | Done; Railway accepted deletion for `internal-llm-gateway-phase0`; readback shows `deletedAt=2026-06-08T06:40:12.528Z` |

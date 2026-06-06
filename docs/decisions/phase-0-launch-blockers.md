@@ -1,6 +1,6 @@
 # Phase 0 launch-blocker decision record
 
-**Status:** Phase 0 technical and policy checks complete except funded provider-backed chat/streaming validation  
+**Status:** Phase 0 technical and policy checks complete; disposable proof project deletion accepted by Railway
 **Date opened:** 2026-06-05  
 **Roadmap phase:** Phase 0 - Launch-blocker validation and disposable proof spike  
 **Tracker:** `docs\operations\implementation-status.md`
@@ -29,8 +29,8 @@ An Opus 4.8 review was completed before implementation on 2026-06-05. The review
 | Phase 0 deliverable | Artifact / section | Status |
 | --- | --- | --- |
 | Phase 0 decision record | This file | Done for Phase 0 except funded provider-backed validation |
-| Disposable proof notes with resource IDs, commands, and teardown status | `docs\decisions\phase-0-disposable-proof-notes.md` | In progress; final chat/streaming proof blocked by OpenAI credits |
-| Supported-tool validation notes | `docs\onboarding\supported-tools-matrix.md` | Drafted; final compatibility proof blocked by OpenAI credits |
+| Disposable proof notes with resource IDs, commands, and teardown status | `docs\decisions\phase-0-disposable-proof-notes.md` | Done; funded chat/streaming proof completed and disposable Railway project deletion accepted |
+| Supported-tool validation notes | `docs\onboarding\supported-tools-matrix.md` | Drafted; named developer-tool compatibility remains deferred to Phase 8 after OpenAI-compatible proof succeeded |
 | Public-origin risk acceptance | `docs\decisions\public-origin-risk-acceptance.md` | Done for Phase 0 |
 | LiteLLM native-auth policy | `docs\security\litellm-native-auth-policy.md` | Drafted; blocked on operator approval |
 | Static egress IP assessment | Static egress section in this file | Done for Phase 0 OpenAI proof; additional providers deferred |
@@ -64,14 +64,14 @@ An Opus 4.8 review was completed before implementation on 2026-06-05. The review
 | --- | --- | --- |
 | Railway CLI installed | Done | Railway CLI 5.3.0 is installed at `C:\Users\v-mnmurugan\AppData\Roaming\npm\railway.cmd`. |
 | Railway CLI authenticated | Done | `railway whoami --json` succeeded on 2026-06-05. |
-| Current directory linked to Railway context | Done | `railway status --json` succeeded. Initial read-only validation saw project `gracious-surprise`; current linked proof context is `internal-llm-gateway-phase0`. |
+| Current directory linked to Railway context | Done | `railway status --json` succeeded. The repository is now linked to durable project `dev-orbit-llm-gateway`; the former proof project `internal-llm-gateway-phase0` has a Railway deletion request accepted. |
 | Project/environment/service visibility | Done | `railway service list --json` returned four services: `erpnext-docker`, `mariadb`, `redis-cache`, and `redis-queue`. |
 | Latest deployment status visibility | Done | Latest deployment status is `SUCCESS` for `erpnext-docker`, `mariadb`, `redis-cache`, and `redis-queue`. |
 | Disposable Phase 0 project created | Done | Project `internal-llm-gateway-phase0` was created and linked on 2026-06-05. Project ID: `c642da87-d8e5-40ec-ba54-bcd02ec1c64b`. |
 | Disposable Phase 0 project empty before provisioning | Done | `railway service list --json` returned zero services after project creation. |
 | Disposable Phase 0 initial resources | Done | Postgres and `litellm-proxy` were created after operator approval. Obsolete `cloudflared-tunnel` was deleted after the native-auth pivot. |
 | LiteLLM deployment and readiness | Done | `litellm-proxy` deployment `09a513aa-d2f1-4eb0-bc29-fba29251cd07` is `SUCCESS`; `/health/readiness` returned healthy with DB connected. |
-| LiteLLM native-auth controls | Done except provider-funded completion | Missing/invalid keys return 401, docs are disabled, generated virtual key reaches OpenAI, developer virtual key is denied admin route, `/v1/models` exposes only `dev-fast`, runtime secrets are present without being printed, and prompt sentinel was not found in logs. Valid chat/streaming is blocked by OpenAI credits. |
+| LiteLLM native-auth controls | Done | Missing/invalid keys returned 401, docs were disabled, generated virtual key reached OpenAI after credits were added, developer virtual key was denied admin route, `/v1/models` exposed only `dev-fast`, runtime secret presence was checked without printing values, prompt sentinel was not found in logs, and chat/streaming succeeded before teardown. |
 
 The linked Railway integration is readable and currently healthy for the linked ERPNext stack. This does not prove the Internal LLM Gateway architecture yet.
 
@@ -149,4 +149,4 @@ Recommended Phase 0 access defaults for approval:
 
 ## Current Phase 0 conclusion
 
-Phase 0 is not complete. The repository now has planning, tracking, decision artifacts, successful Railway CLI validation, disposable Railway resources, a deployed LiteLLM proof with healthy Postgres connectivity, and validated native-auth rejection/admin-denial/logging controls. The live proof cannot complete until a funded provider key is available for successful chat and streaming responses, and Phase 1 should not start until the remaining risk/budget/admin/teardown decisions are closed or explicitly accepted.
+Phase 0 is complete. The repository has planning, tracking, decision artifacts, successful Railway CLI validation, a completed disposable LiteLLM proof with healthy Postgres connectivity, credited provider-backed chat and streaming validation, native-auth rejection/admin-denial/logging controls, and a completed teardown request for the disposable Railway project. Named developer-tool compatibility remains deferred to Phase 8 staging proof gates.

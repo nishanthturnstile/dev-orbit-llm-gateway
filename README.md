@@ -17,10 +17,10 @@ Cloudflare Tunnel/Access/WAF, Redis, a custom admin API, and a custom admin web 
 
 | Service | Status | Purpose |
 | --- | --- | --- |
-| `services\litellm` | Phase 3 policy-gated scaffold | LiteLLM proxy image/config home. `services\litellm\config.yaml` is the runtime config source of truth. |
-| Railway managed Postgres | Platform service, not a repo directory | Persistent LiteLLM state. |
-| `services\backup-worker` | Phase 3 policy-gated scaffold | Future off-platform logical backup worker before production. |
-| `services\cloudflared-tunnel` | Deferred Phase 3 policy-gated scaffold | Optional future hardening if public-origin risk requires it. |
+| `services\litellm` / Railway `litellm-proxy` | Phase 5 deployed in staging with no public URL | LiteLLM proxy image/config home. `services\litellm\config.yaml` is the runtime config source of truth. |
+| Railway managed Postgres | Phase 5 staging service | Persistent LiteLLM state. |
+| `services\backup-worker` / Railway `backup-worker` | Phase 4 staging shell; repo scaffold policy-gated | Future off-platform logical backup worker before production. |
+| `services\cloudflared-tunnel` / Railway `cloudflared-tunnel` | Phase 4 staging shell; deferred runtime | Optional future hardening if public-origin risk requires it. |
 
 Do not add `apps\admin-web`, `services\admin-api`, `services\llm-edge`, Redis, or custom admin database artifacts without an approved later-phase decision.
 
@@ -32,7 +32,7 @@ Use `.env.example` for variable names and placeholder shapes only. Real provider
 
 ## Deployment model
 
-Durable Railway staging and production deployment are later phases. No Railway, provider, Cloudflare, database, tunnel, GitHub repository setting, or domain resources should be created or mutated from Phase 3 policy-gate work.
+Durable Railway staging exists in project `dev-orbit-llm-gateway`. Phase 5 deployed `litellm-proxy` only, with no public URL; `backup-worker` and `cloudflared-tunnel` remain undeployed until their later phases.
 
 When deployment phases begin, LiteLLM should use `/health/readiness` for Railway deployment health checks. Do not use `/health` as a deployment health check because LiteLLM documents it as a provider-probing endpoint.
 
@@ -48,3 +48,6 @@ When deployment phases begin, LiteLLM should use `/health/readiness` for Railway
 - CI policy gates: `docs\operations\ci-policy-gates.md`
 - Model alias policy: `docs\security\model-alias-policy.md`
 - Secret scanning: `docs\security\secret-scanning.md`
+- Railway staging config: `config\railway\staging.md`
+- Railway setup runbook: `docs\runbooks\railway-project-service-setup.md`
+- Staging deployment runbook: `docs\runbooks\staging-deployment.md`

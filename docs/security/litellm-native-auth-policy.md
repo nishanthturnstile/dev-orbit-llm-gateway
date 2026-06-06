@@ -13,16 +13,19 @@ The public Internal LLM Gateway endpoint must rely on LiteLLM-native authenticat
 | --- | --- |
 | Master key | Store only as a sealed Railway variable. Do not distribute to developers. |
 | Provider keys | Store only as sealed Railway variables. Reference via environment variables in config. |
+| Salt key | Store `LITELLM_SALT_KEY` only as a sealed Railway variable before first boot while DB-backed model state is enabled. |
 | Developer keys | One LiteLLM virtual key per developer. No shared production developer key. |
 | Model access | Developers use approved aliases only; provider names are not exposed as the normal interface. |
 | Budgets | Configure per-key daily and monthly budgets plus a company-level ceiling before production. |
 | Rate limits | Configure per-key RPM/TPM and max concurrency/request limits before public use. |
-| Admin UI | Protect with strong unique credentials, LiteLLM-supported SSO, or another approved hardening layer. |
+| Admin UI | Disable for Phase 5 staging validation; protect with strong unique credentials, LiteLLM-supported SSO, or another approved hardening layer before any later exposure. |
 | Admin routes | Developer virtual keys must not access `/ui`, `/key/*`, `/user/*`, `/team/*`, `/config/*`, `/admin*`, or equivalent control routes. |
 | Docs/Swagger | Disable public docs/Swagger where supported, or explicitly protect it before production. |
 | Logging | Keep raw prompt/response logging disabled by default. Use metadata-only logs. |
 | Monitoring | Alert on spend spikes, budget exhaustion, 401/403 spikes, provider failures, and gateway 5xx. |
 | Rotation | Document virtual-key and master-key rotation before production. |
+
+Phase 5 sets `DISABLE_ADMIN_UI=true` and also loads a container startup guard that returns 404 for `/ui`, `/ui/*`, and the LiteLLM UI asset prefix. The guard is required for the pinned LiteLLM image because the UI shell remained reachable when only the documented environment flag was present.
 
 ## Phase 0 validation checklist
 

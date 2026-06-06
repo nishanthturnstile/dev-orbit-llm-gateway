@@ -152,6 +152,8 @@ def validate(root: Path) -> None:
         raise SystemExit("general_settings.master_key must be os.environ/LITELLM_MASTER_KEY")
     if general.get("database_url") != "os.environ/DATABASE_URL":
         raise SystemExit("general_settings.database_url must be os.environ/DATABASE_URL")
+    if general.get("health_check_details") is not False:
+        raise SystemExit("general_settings.health_check_details must be false")
 
     settings = runtime.get("litellm_settings", {})
     if settings.get("turn_off_message_logging") is not True:

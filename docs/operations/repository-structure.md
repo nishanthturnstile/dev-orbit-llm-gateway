@@ -128,5 +128,6 @@ Every directory intended to exist after Phase 3 contains a tracked README, scrip
 - LiteLLM virtual keys and spend tracking require Postgres and a master key.
 - LiteLLM `/health/readiness` is appropriate for deployment readiness; `/health` probes providers.
 - Railway variables should hold sealed secrets and service references, not committed values.
+- Railway Phase 4 created durable staging service shells. Future source attachment must keep repository root as build context because service Dockerfiles use repository-root-relative `COPY` paths.
 - Railway detects service Dockerfiles by name/path and supports config-as-code in later phases.
 - GitHub Actions use least privilege, no secrets for Phase 3 gates, safe expression handling, `persist-credentials: false`, and full-SHA-pinned actions.

@@ -1,6 +1,6 @@
 # Phase 0 disposable proof notes
 
-**Status:** Complete for Phase 2 handoff; named developer-tool validation deferred to Phase 8
+**Status:** Complete and torn down; named developer-tool validation deferred to Phase 8
 **Roadmap phase:** Phase 0 - Launch-blocker validation and disposable proof spike
 **Tracker:** `docs\operations\implementation-status.md`
 
@@ -34,15 +34,15 @@ The proof should validate the smallest useful path:
 7. Missing/invalid key rejection.
 8. Developer virtual-key denial for admin/control routes.
 
-`litellm-proxy` currently has a temporary public Railway proof endpoint protected by LiteLLM native authentication. Keep it limited to Phase 0 validation until native-auth controls, admin controls, budgets, rate limits, metadata-only logging, secret handling, and teardown timing are approved.
+`litellm-proxy` had a temporary public Railway proof endpoint protected by LiteLLM native authentication. That endpoint belonged only to the disposable Phase 0 project and is no longer needed after durable staging shell provisioning.
 
 ## Resource inventory
 
 | Resource | ID / name | Environment | Status | Teardown status |
 | --- | --- | --- | --- | --- |
-| Railway project | `internal-llm-gateway-phase0` (`c642da87-d8e5-40ec-ba54-bcd02ec1c64b`) | Default | Created | Pending final teardown |
-| Railway `litellm-proxy` service | `litellm-proxy` (`f48fbf0d-706c-4acf-99cf-dc0e6d5febb9`) | Default / Railway `production` | Deployed; latest validated deployment `2cba1ae5-6bb6-4043-8630-d389c1861ae4` is `SUCCESS` | Pending final teardown |
-| Railway `litellm-postgres` service | `Postgres` (`0a46a957-c35f-4d8c-8efe-ad31dba1c9fc`) | Default / Railway `production` | Created; latest deployment `SUCCESS`; readiness check reports DB connected | Pending final teardown |
+| Railway project | `internal-llm-gateway-phase0` (`c642da87-d8e5-40ec-ba54-bcd02ec1c64b`) | Default | Deletion accepted by Railway; `deletedAt=2026-06-08T06:40:12.528Z` | Done |
+| Railway `litellm-proxy` service | `litellm-proxy` (`f48fbf0d-706c-4acf-99cf-dc0e6d5febb9`) | Default / Railway `production` | Was deployed; latest validated deployment `2cba1ae5-6bb6-4043-8630-d389c1861ae4` was `SUCCESS` before project deletion | Done through project deletion |
+| Railway `litellm-postgres` service | `Postgres` (`0a46a957-c35f-4d8c-8efe-ad31dba1c9fc`) | Default / Railway `production` | Was created; latest deployment was `SUCCESS`; readiness check reported DB connected before project deletion | Done through project deletion |
 | Railway `cloudflared-tunnel` service | `cloudflared-tunnel` (`30086a34-1c86-4d53-b685-e43f18dd5174`) | `production` | Deleted after auth pivot | Done |
 | Cloudflare Tunnel | Not needed for current design | N/A | Deferred hardening option | N/A |
 | Provider proof key/model | OpenAI `gpt-4o-mini` exposed as `dev-fast` | Railway variable / LiteLLM config | Credited key validated through LiteLLM; chat and streaming return `200` | Revoke/replace after proof |
@@ -71,6 +71,7 @@ Only non-secret commands and sanitized outputs may be recorded here.
 | Prompt sentinel log leak check | Railway logs filter for `phase0_no_log_sentinel_20260606` | Done | No sentinel string found in the latest 500 service logs. |
 | Runtime secret/config presence | `railway run` readback of booleans only | Done | `LITELLM_MASTER_KEY`, `OPENAI_API_KEY`, `UI_PASSWORD`, and `DATABASE_URL` are present. `NO_DOCS=True`, `NO_REDOC=True`, `ENVIRONMENT=phase0`, `PORT=4000`. |
 | Model alias exposure | `GET /v1/models` with master key injected by `railway run` | Done | Returned `200`, exposes only `dev-fast`, and response did not contain provider keys, database URLs, or secret markers. |
+| Disposable project deletion | `railway delete --project c642da87-d8e5-40ec-ba54-bcd02ec1c64b --yes --json` | Done | Railway accepted deletion for project `internal-llm-gateway-phase0`; project readback shows `deletedAt=2026-06-08T06:40:12.528Z`. |
 
 ## Current outcome
 
@@ -101,8 +102,8 @@ Readiness also returned `200` with DB connected, and a bounded Railway log searc
 
 | Teardown item | Status |
 | --- | --- |
-| Remove disposable Railway services | Scheduled after funded validation or by 2026-06-13 if deferred |
-| Remove disposable Railway database | Scheduled after funded validation or by 2026-06-13 if deferred |
+| Remove disposable Railway services | Done through project deletion request; Railway readback shows project deletion scheduled |
+| Remove disposable Railway database | Done through project deletion request; Railway readback shows project deletion scheduled |
 | Remove obsolete empty `cloudflared-tunnel` service | Done |
-| Revoke/delete disposable provider proof key | Scheduled after funded validation or provider replacement |
+| Revoke/delete disposable provider proof key | Done through project deletion request for the Railway-held proof environment; any provider-side key should remain revoked/rotated outside the repository if it was not single-use |
 | Confirm no Phase 0 resource is marked staging or production | Done; resources are documented as Phase 0 disposable only, even though Railway's default environment is named `production` |
