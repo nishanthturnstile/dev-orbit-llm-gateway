@@ -1,0 +1,23 @@
+# Enforced by services/litellm/scripts/verify-config.sh.
+denied_alias_patterns:
+  - "^sensitive-.*$"
+  - "^sensitive-code$"
+
+denied_wildcard_routes:
+  - "openai/*"
+  - "anthropic/*"
+  - "bedrock/*"
+  - "vertex_ai/*"
+
+denied_endpoint_patterns:
+  - "localhost"
+  - "127\\.0\\.0\\.1"
+  - "railway\\.internal"
+  - "\\.up\\.railway\\.app"
+  - "postgres(?:ql)?://"
+  - "redis://"
+
+denied_runtime_patterns:
+  - "--detailed_debug"
+  - "sk-[A-Za-z0-9_-]{16,}"
+  - "BEGIN (RSA|OPENSSH|PRIVATE) KEY"

@@ -1,7 +1,7 @@
 # Supported tools matrix
 
-**Status:** Draft; Phase 0 OpenAI-compatible script path is blocked only by provider credits  
-**Roadmap phase:** Phase 0 and Phase 8 client compatibility  
+**Status:** Draft; OpenAI-compatible validation script is supported, named developer tools deferred to Phase 8
+**Roadmap phase:** Phase 0 and Phase 8 client compatibility
 **Tracker:** `docs\operations\implementation-status.md`
 
 ## Status values
@@ -18,11 +18,11 @@
 
 | Tool | Custom base URL support | LiteLLM `Authorization` support | Streaming support | Status | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| Continue.dev | Not tested | Not tested | Not tested | Not tested | Blocked until provider credits allow a real completion. |
-| Cline/Roo-style VS Code tool | Not tested | Not tested | Not tested | Not tested | Blocked until provider credits allow a real completion. |
-| Aider or equivalent CLI | Not tested | Not tested | Not tested | Not tested | Blocked until provider credits allow a real completion. |
-| OpenAI-compatible validation script | Works against public Railway base URL | Works with LiteLLM virtual key | Request reaches provider | Blocked | LiteLLM accepts the virtual key and forwards to OpenAI; OpenAI returns quota/billing `429` because the key has no credits. |
-| Copilot CLI BYOK-compatible usage | Not tested | Not tested | Not tested | Not tested | Blocked until provider credits allow a real completion. |
+| Continue.dev | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
+| Cline/Roo-style VS Code tool | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
+| Aider or equivalent CLI | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
+| OpenAI-compatible validation script | Works against public Railway base URL | Works with LiteLLM virtual key | Works | Supported | After OpenAI credits were added, `scripts\phase0-validate-litellm.ps1` generated a LiteLLM virtual key and completed both chat and streaming calls with `200`. |
+| Copilot CLI BYOK-compatible usage | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
 
 ## Minimum Phase 0 proof
 
@@ -37,4 +37,6 @@ Any wrapper requirement must be documented before the tool can be marked `Suppor
 
 ## Phase 0 follow-up
 
-After adding OpenAI credits or switching to another funded low-cost provider, rerun `scripts\phase0-validate-litellm.ps1`. If chat and streaming succeed, mark the OpenAI-compatible validation script as `Supported`, then test one actual primary developer tool before Phase 1 is treated as unblocked.
+After adding OpenAI credits, `scripts\phase0-validate-litellm.ps1` succeeded for chat and streaming through the public LiteLLM endpoint.
+
+The OpenAI-compatible validation script is accepted as sufficient for Phase 2 planning. Named-tool compatibility remains deferred to Phase 8 and must be validated before a tool is marked `Supported`.

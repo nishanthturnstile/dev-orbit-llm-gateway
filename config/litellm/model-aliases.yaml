@@ -1,0 +1,59 @@
+# Policy metadata only. LiteLLM does not load this file at runtime.
+# Runtime aliases are defined in services/litellm/config.yaml.
+aliases:
+  - name: dev-fast
+    tier: fast
+    provider_family: openai
+    default_runtime_model: openai/gpt-4o-mini
+    phase0_validated: true
+    intended_use: Low-latency general development assistance.
+
+  - name: dev-code
+    tier: code
+    provider_family: openai
+    default_runtime_model: openai/gpt-4.1-mini
+    phase0_validated: false
+    intended_use: Code-focused development assistance after model availability validation.
+
+  - name: dev-reasoning
+    tier: reasoning
+    provider_family: openai
+    default_runtime_model: openai/o4-mini
+    phase0_validated: false
+    intended_use: Higher-latency reasoning tasks after model availability validation.
+
+  - name: dev-long-context
+    tier: long-context
+    provider_family: openai
+    default_runtime_model: openai/gpt-4.1-mini
+    phase0_validated: false
+    intended_use: Long-context development and analysis after model availability validation.
+
+  - name: batch-analysis
+    tier: batch
+    provider_family: openai
+    default_runtime_model: openai/gpt-4o-mini
+    phase0_validated: false
+    intended_use: Non-interactive analysis jobs with explicit budgets.
+
+  - name: dev-search
+    tier: search
+    provider_family: perplexity
+    default_runtime_model: perplexity/sonar
+    phase0_validated: false
+    requires_provider_validation: true
+    intended_use: Search-augmented development queries after Perplexity credentials are approved.
+
+  - name: dev-embed
+    tier: embedding
+    provider_family: openai
+    default_runtime_model: openai/text-embedding-3-small
+    phase0_validated: false
+    intended_use: Embeddings for approved tool workflows after route validation.
+
+  - name: dev-vision
+    tier: vision
+    provider_family: openai
+    default_runtime_model: openai/gpt-4o-mini
+    phase0_validated: false
+    intended_use: Chat completions with image input after vision route validation.

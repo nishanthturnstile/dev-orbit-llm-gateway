@@ -1,0 +1,3 @@
+FROM cloudflare/cloudflared:2025.6.0@sha256:783e0e52ddad1e91f0dba5f305fc7a8dc94afab8b4c8c309bcd17c5a45654dfb
+
+CMD ["tunnel", "--no-autoupdate", "run"]
