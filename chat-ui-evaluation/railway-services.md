@@ -1,6 +1,6 @@
 # Railway service map for chat UI evaluation
 
-**Status:** Proposed staging evaluation map only. No resources are approved by this document.
+**Status:** Approved and deployed in the existing Railway `staging` environment for UI evaluation. Future resource mutations still require explicit operator approval for the exact action.
 
 All services must live in the existing staging environment as separate services/resources. They must not be merged into `litellm-proxy`, `backup-worker`, or LiteLLM Postgres.
 
@@ -9,7 +9,7 @@ All services must live in the existing staging environment as separate services/
 | Item | Requirement |
 | --- | --- |
 | LiteLLM endpoint | Use the approved staging public endpoint with `/v1`; keep literal hostnames out of tracked docs. |
-| Open WebUI key | Create a scoped, budgeted LiteLLM virtual key named for `open-webui-eval`. |
+| Open WebUI keys | Create separate scoped, budgeted LiteLLM virtual keys for `open-webui-eval-chat` and `open-webui-eval-rag`. |
 | LibreChat key | Create a scoped, budgeted LiteLLM virtual key named for `librechat-eval`. |
 | Allowed aliases | Start with `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`; add `dev-search` or `dev-embed` only when the UI feature needs them. |
 | Admin routes | UI keys must not access LiteLLM admin/control routes. |
@@ -40,6 +40,8 @@ Required controls:
 
 - Attach a Railway volume at `/app/backend/data`.
 - Set `WEBUI_AUTH=True`, `ENABLE_LOGIN_FORM=True`, `DEFAULT_USER_ROLE=user`, `ENABLE_DIRECT_CONNECTIONS=False`, and `ENABLE_OLLAMA_API=False`.
+- Set `ENABLE_EVALUATION_ARENA_MODELS=False`, `ENABLE_MODEL_FILTER=True`, and `MODEL_FILTER_LIST=dev-fast;dev-code;dev-reasoning;dev-long-context` so chat selection exposes only approved LiteLLM chat aliases.
+- Use separate LiteLLM keys: `OPENAI_API_KEY` allows only chat aliases, while `RAG_OPENAI_API_KEY` allows only `dev-embed`.
 - Route Open WebUI knowledge/RAG embeddings through LiteLLM with `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL`, `RAG_OPENAI_API_KEY`, and `RAG_EMBEDDING_MODEL=dev-embed`.
 - Use a stable sealed `WEBUI_SECRET_KEY`.
 - Keep `ENABLE_SIGNUP=False` before tester access. If the first admin must be created through the UI, use a short operator-only setup window, then disable signup and redeploy before tester accounts are added.
@@ -116,13 +118,13 @@ None of these stores may use LiteLLM Postgres.
 
 ## Approval manifest for staging deployment
 
-This manifest is intentionally blocked until the operator approves the exact Railway mutations.
+This manifest was approved by the operator for the staging evaluation deployment.
 
 | Step | Mutation |
 | --- | --- |
 | 1 | Create `open-webui-eval` from the pinned Open WebUI image. |
 | 2 | Attach `open-webui-eval` volume at `/app/backend/data`. |
-| 3 | Generate a scoped LiteLLM virtual key alias `open-webui-eval` with only approved aliases and low staging budget/rate limits. |
+| 3 | Generate scoped LiteLLM virtual key aliases `open-webui-eval-chat` and `open-webui-eval-rag` with approved chat/RAG aliases and low staging budget/rate limits. |
 | 4 | Set Open WebUI non-secret variables and sealed secrets without printing raw values. |
 | 5 | Create a Railway public domain for `open-webui-eval` on port `8080`. |
 | 6 | Create `librechat-mongodb-eval`, `librechat-meilisearch-eval`, `librechat-vectordb-eval`, `librechat-rag-api-eval`, and `librechat-api-eval`. |
@@ -132,3 +134,17 @@ This manifest is intentionally blocked until the operator approves the exact Rai
 | 10 | Deploy `librechat-api-eval` from `chat-ui-evaluation\librechat` with `railway up`. |
 | 11 | Create a Railway public domain for `librechat-api-eval` on port `3080`. |
 | 12 | Validate auth, model restrictions, streaming, RAG embedding route, logs, and budget/rate limits before tester access. |
+
+## Deployment evidence
+
+| Check | Status | Evidence |
+| --- | --- | --- |
+| Open WebUI service | Done | Root page and `/health` returned HTTP 200 after deployment. |
+| Open WebUI access controls | Done | Bootstrap admin login returned HTTP 200; signup is disabled; direct connections, Ollama, and evaluation arena models are disabled. |
+| Open WebUI model restrictions | Done | Authenticated model list exposes only `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`; `dev-embed` remains configured only through the separate RAG key. |
+| Open WebUI LiteLLM chat path | Done | Authenticated UI chat completion through `dev-fast` returned HTTP 200. |
+| LibreChat services | Done | MongoDB, Meilisearch, pgvector, RAG API, and LibreChat API are running in staging. |
+| LibreChat Mongo authentication | Done | Initial Mongo auth failure was repaired by creating the admin user from sealed Mongo service variables; LibreChat now connects to MongoDB successfully. |
+| LibreChat access controls | Done | Bootstrap admin account was created, then `ALLOW_REGISTRATION=false` was applied; email login remains enabled, social login and password reset remain disabled. |
+| LibreChat model restrictions | Done | Authenticated `LiteLLM Staging` endpoint exposes only `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`. |
+| LibreChat LiteLLM chat path | Done | Authenticated chat through `/api/agents/chat/custom` with `dev-fast` returned HTTP 200. |

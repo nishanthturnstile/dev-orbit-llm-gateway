@@ -43,8 +43,8 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 
 | Item | Status | Evidence / blocker |
 | --- | --- | --- |
-| Open WebUI and LibreChat staging evaluation scaffold. | In progress | `chat-ui-evaluation` documents separate staging UI services, UI-only data stores, teardown requirements, scoped LiteLLM UI keys, and exact Railway approval boundaries. |
-| Open WebUI and LibreChat staging deployment. | Blocked | Exact Railway mutation manifest is recorded in `chat-ui-evaluation\railway-services.md`; execution requires explicit operator approval before creating services, volumes, public domains, variables, LiteLLM virtual keys, or deployments. |
+| Open WebUI and LibreChat staging evaluation scaffold. | Done | `chat-ui-evaluation` documents separate staging UI services, UI-only data stores, teardown requirements, scoped LiteLLM UI keys, exact Railway approval boundaries, deployed controls, and validation evidence. |
+| Open WebUI and LibreChat staging deployment. | Done | Operator approved the staging deployment. Open WebUI and LibreChat evaluation services, volumes/data stores, public Railway domains, scoped LiteLLM UI keys, and sealed service variables are configured in `staging`. Open WebUI uses separate chat and RAG LiteLLM keys; root/health, admin login, restricted chat model list, and chat via `dev-fast` returned HTTP 200. LibreChat API, MongoDB, Meilisearch, pgvector, and RAG API are running; LibreChat admin bootstrap is complete, registration is disabled, the `LiteLLM Staging` endpoint exposes only approved chat aliases, and chat via `/api/agents/chat/custom` returned HTTP 200. |
 
 ## Phase 0 task tracker
 
