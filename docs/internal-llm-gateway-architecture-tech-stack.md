@@ -271,12 +271,18 @@ Future browser variables must never expose:
 Required variables:
 
 - `LITELLM_DATABASE_URL`: private/internal.
-- `BACKUP_BUCKET_ENDPOINT`
-- `BACKUP_BUCKET_NAME`
-- `BACKUP_ACCESS_KEY_ID`
-- `BACKUP_SECRET_ACCESS_KEY`: sealed.
 - `BACKUP_ENCRYPTION_KEY`: sealed.
+- `BACKUP_RCLONE_DESTINATION`
+- `BACKUP_TIER`: `daily`, `weekly`, or `monthly`.
 - `BACKUP_RETENTION_DAYS`
+- `RCLONE_CONFIG_BACKUP_TYPE`
+- `RCLONE_CONFIG_BACKUP_PROVIDER`
+- `RCLONE_CONFIG_BACKUP_ENDPOINT`
+- `RCLONE_CONFIG_BACKUP_REGION`
+- `RCLONE_CONFIG_BACKUP_ACCESS_KEY_ID`
+- `RCLONE_CONFIG_BACKUP_SECRET_ACCESS_KEY`: sealed.
+- `RCLONE_CONFIG_BACKUP_ACL`
+- `RESTORE_DATABASE_URL`: only for fresh restore-drill databases.
 
 Backup credentials must be scoped only to the backup bucket/prefix.
 

@@ -24,3 +24,15 @@ Record only non-secret metadata:
 5. Confirmation that the revoked key no longer works.
 
 If a key leak might include provider credentials, database URLs, or the LiteLLM master key, rotate the affected upstream secret and document only the incident metadata.
+
+## Post-restore revoked-key reconciliation
+
+A database restore can reintroduce LiteLLM virtual keys that were revoked after the restored backup timestamp. Before exposing restored traffic:
+
+1. Identify the restored backup timestamp.
+2. Compare restored LiteLLM key metadata with the non-secret revocation ledger.
+3. Re-block or revoke every key whose revocation timestamp is newer than the restored backup timestamp.
+4. Validate that a re-blocked disposable key no longer works.
+5. Record only non-secret evidence: key alias or LiteLLM key ID, owner or validation purpose, revocation timestamp, restore timestamp, and confirmation result.
+
+The revocation ledger must never store raw virtual-key values. Use key aliases, LiteLLM key IDs, owner/team metadata, hashes if available, revocation reason, ticket/reference ID, and timestamps.

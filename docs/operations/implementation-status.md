@@ -1,7 +1,7 @@
 # Implementation status tracker
 
 **Status date:** 2026-06-06
-**Current phase:** Phase 5 - LiteLLM deployment and runtime policy validation (Blocked)
+**Current phase:** Phase 7 - Backups, restore, alerts, and runbooks (In progress; encrypted logical backup path validated; native backups, fresh restore drill, and alerting still pending)
 **Primary roadmap:** `docs\internal-llm-gateway-implementation-roadmap.md`
 
 ## Status rules
@@ -24,9 +24,9 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | 2 | Local service scaffolding and policy/config authoring | Done | Local scaffolds, LiteLLM runtime config, policy metadata, smoke skeletons, and validation docs are complete. Local YAML/verifier/shell syntax/pytest validation passed. GPT-5.5 and Opus 4.8 reviews approved with no blockers. No Railway/provider/Cloudflare resources were mutated. |
 | 3 | CI/CD, secret scanning, and policy gates | Done | Local/CI enforcement scripts, GitHub Actions workflows, secret scanning, and image policy gates are complete. Local validation passed; GPT-5.5 approved as-is and Opus 4.8 approved with minor hardening notes that were addressed. No Railway/provider/Cloudflare/GitHub settings were mutated. |
 | 4 | Durable Railway staging provisioning | Done | Durable Railway project `dev-orbit-llm-gateway` and `staging` environment exist. Managed Postgres is healthy; app service shells are sourceless, undeployed, and domainless. Local validation passed; GPT-5.5 and Opus 4.8 reviewed with no blockers. |
-| 5 | LiteLLM deployment and runtime policy validation | Blocked | `litellm-proxy` deployment `dceac0a0-a478-4bc4-991d-45b124f56358` is `SUCCESS` with one running replica and no public URL. Private validation passes for readiness, missing/invalid auth, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, RPM enforcement, Admin UI/docs/ReDoc/OpenAPI closure, admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, and fresh log hygiene. `dev-search` reaches Perplexity but fails with provider `401` because the staged `PERPLEXITY_API_KEY` is invalid. Staging secrets were exposed during validation readback and must be rotated before real use. |
-| 6 | Public-origin hardening and access validation | Not started | Blocked until Phase 5 has a valid `PERPLEXITY_API_KEY` or an explicit decision removes/defer-gates `dev-search`, and exposed staging secrets are rotated or explicitly risk-accepted. |
-| 7 | Backups, restore, alerts, and runbooks | Not started | Depends on staging services and backup target decisions. |
+| 5 | LiteLLM deployment and runtime policy validation | Done | `litellm-proxy` deployment `095bc349-2e77-4552-9ab4-ff36d54bb506` is `SUCCESS` with one running replica and no public URL. Private validation passes for readiness, missing/invalid auth, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, docs/ReDoc/OpenAPI closure, Admin UI private reachability with sealed credentials, and targeted `dev-search` validation with the rotated Perplexity key. |
+| 6 | Public-origin hardening and access validation | Done | Railway-generated staging endpoint is live. Missing/invalid auth is blocked, valid disposable keys succeed on approved `/v1` chat/search/embedding routes, developer key admin route is denied, docs/ReDoc/OpenAPI are blocked, Admin UI loads at `/ui/` with sealed credentials, and disposable public validation key was blocked. Active alerting is explicitly risk-accepted as deferred for this staging proof. |
+| 7 | Backups, restore, alerts, and runbooks | In progress | Phase 7 plan and repository-side implementation were reviewed with GPT-5.5 and Opus 4.8. Backup-worker script hardening and required runbook drafts are complete locally. Staging Railway Object Storage bucket `litellm-staging-backups` exists in `sin` and backup-worker rclone variables are configured. After prior secret-exposure remediation, the operator added a fresh escrowed `BACKUP_ENCRYPTION_KEY`; fresh encrypted backup artifacts uploaded successfully, archive-list `restore-check` passed against the validation artifact, and the daily backup cron was restored. Native Railway backup evidence, fresh restore-drill database validation, RPO/RTO measurement, and push-style backup-failure alerting remain pending. |
 | 8 | Staging proof gates and client compatibility | Not started | Depends on deployed staging stack. |
 | 9 | Production deployment, cutover, and pilot | Not started | Depends on all staging proof gates. |
 | 10 | Post-pilot hardening and deferred capabilities | Not started | Depends on production pilot findings. |
@@ -178,6 +178,57 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | Private-network wiring is configured without public DB URLs. | Done with Phase 4 interpretation | App services reference `${{Postgres.DATABASE_URL}}`. Live app-to-DB proof is deferred to Phase 5 because app services intentionally do not run in Phase 4. |
 | Docs and runbooks are updated with non-secret evidence. | Done | `config\railway\staging.md`, `docs\runbooks\railway-project-service-setup.md`, and `docs\runbooks\staging-deployment.md` are updated. |
 | Final validation and GPT/Opus review are complete. | Done | Local validation passed; GPT-5.5 and Opus 4.8 reviewed with no blockers. |
+
+## Phase 6 task tracker
+
+| ID | Roadmap item | Status | Evidence / blocker | Artifact |
+| --- | --- | --- | --- | --- |
+| P6-01 | Review Phase 6 plan with GPT and Opus before implementation. | Done | GPT-5.4 and Opus 4.8 reviewed the plan. Feedback incorporated: Admin UI decision must be explicit, control-plane secrets must be rotated before public ingress, active baseline alerting is required before exposure, admin/control denial coverage must expand, and public validation must run after approved mutations. | Session `plan.md` |
+| P6-02 | Reconcile Phase 5 before public ingress. | Done | `dev-search` passed targeted private validation with rotated staged Perplexity key and disposable validation key blocking. Public ingress remains blocked until exposed control-plane staging secrets are confirmed rotated. | `docs\operations\litellm-policy-validation.md` |
+| P6-03 | Record Phase 6 public-origin and Admin UI decisions. | Done | Decisions recorded: Railway-generated public endpoint first, custom domain deferred, public `/health/readiness` accepted for staging, Admin UI enabled for private staging testing with sealed credentials while public exposure remains gated, generous configurable budget/rate defaults selected, Cloudflare/edge hardening removed from Phase 6 scope, and alerting deferred until public ingress or explicit risk exception. | `docs\decisions\public-origin-risk-acceptance.md`; `docs\security\litellm-native-auth-policy.md`; `docs\operations\public-origin-validation.md` |
+| P6-04 | Add public-origin validation tooling. | Done | Phase 6 validator and skip-safe public-origin smoke tests were added and local validation passed for auth rejection, approved route proof, streaming, docs closure, admin/control denial families, redacted output, and safe response bodies. | `scripts\phase6-validate-public-origin.ps1`; `tests\smoke\test_public_origin_policy.py`; `.github\workflows\staging-smoke.yml` |
+| P6-05 | Configure Railway-generated developer API endpoint. | Done | Railway-generated public endpoint created for staging `litellm-proxy`; literal host is kept out of tracked docs to satisfy repository secret/public-host scans. | `docs\operations\public-origin-validation.md` |
+| P6-06 | Configure active baseline alerts. | Done | Operator explicitly deferred active alerting as a Phase 6 staging-proof risk exception. Revisit before production or broader pilot. | `docs\operations\public-origin-validation.md` |
+| P6-07 | Validate public-origin native auth and route controls. | Done | Public checks passed: readiness public `200`, missing/invalid auth rejected, `dev-fast` chat passed, `dev-search` chat passed, `dev-embed` embeddings passed, developer key admin route denied, docs/ReDoc/OpenAPI blocked, Admin UI HTML loads at `/ui/`, and disposable validation key was blocked. | `scripts\phase6-validate-public-origin.ps1` |
+| P6-08 | Update final Phase 6 evidence. | Done | Final Phase 6 evidence recorded with non-secret public endpoint and pass/fail summaries. | This file; `docs\operations\public-origin-validation.md` |
+
+## Phase 6 exit criteria tracker
+
+| Exit criterion | Status | Evidence / blocker |
+| --- | --- | --- |
+| Anonymous or missing-key request to `llm.thaarei.com` or staging equivalent is blocked. | Done | Missing auth returns `401` on the Railway-generated staging endpoint. |
+| Invalid LiteLLM virtual key is blocked. | Done | Invalid auth returns `401` on the Railway-generated staging endpoint. |
+| Valid LiteLLM virtual key succeeds on approved `/v1` routes. | Done | Disposable validation key succeeded on `dev-fast`, `dev-search`, and `dev-embed`, then was blocked. |
+| Streaming completion works through the public LiteLLM endpoint. | Done | Public `dev-fast` streaming returned `200` and produced SSE data with a disposable validation key. |
+| Admin UI is available only to approved admins/leads through an approved control. | Done | Admin UI loads at `/ui/` on the Railway-generated staging endpoint and is protected by sealed LiteLLM Admin UI credentials. |
+| Developer virtual keys cannot access LiteLLM Admin UI or admin/control routes. | Done | Disposable developer key was denied on `/key/list`, `/user/info`, `/team/list`, `/config/list`, `/spend/logs`, and `/admin`. |
+| Public docs/Swagger are disabled or explicitly protected. | Done | `/docs`, `/redoc`, and `/openapi.json` are blocked on the public endpoint. |
+
+## Phase 7 task tracker
+
+| ID | Roadmap item | Status | Evidence / blocker | Artifact |
+| --- | --- | --- | --- | --- |
+| P7-01 | Review Phase 7 plan with GPT and Opus before implementation. | Done | GPT-5.5 and Opus 4.8 reviewed the plan. Feedback incorporated: same-project Railway Object Storage is staging-only, backup-failure alerting needs push visibility, backup encryption-key escrow is required, daily/weekly/monthly logical retention must be explicit, native snapshot restore must be validated or documented, and RPO/RTO must be measured. | Session `plan.md` |
+| P7-02 | Harden backup-worker logical backup and restore scripts. | Done | Scripts create compressed custom-format encrypted dumps, upload non-secret checksum manifests, emit metadata-only JSON logs, support backup tiers, and support restore into a fresh database through guarded `RESTORE_DATABASE_URL` plus `RESTORE_TARGET_CONFIRMED=fresh-restore-drill`. Local shell syntax, policy lint, secret scan without Gitleaks, smoke collection, and GPT/Opus review passed. | `services\backup-worker\scripts\backup-postgres.sh`; `services\backup-worker\scripts\restore-check.sh` |
+| P7-03 | Add Phase 7 backup, restore, alert, rotation, outage, rollback, and leakage runbooks. | Done | Required runbook files were added, the runbook index updated, revoked-key reconciliation documented, and local policy/secret/smoke validation passed. | `docs\runbooks\*.md` |
+| P7-04 | Create staging backup object-storage target. | Done | Railway Object Storage bucket `litellm-staging-backups` (`644dfb0b-9b67-4c46-aaf7-a416bf4db1af`) exists in staging region `sin`; object count is `8` after fresh-key validation and final daily-cron readback. backup-worker has rclone destination/config variables and uses `RCLONE_CONFIG_BACKUP_URL_STYLE=path`. Same-project storage remains staging-only; production remains blocked until external/cross-account storage or risk acceptance exists. | `docs\runbooks\off-platform-logical-backup-restore.md` |
+| P7-05 | Deploy scheduled backup-worker. | Done | backup-worker deployed successfully with a Postgres 18 `pg_dump` image and no public URL. After bucket credential rotation and a fresh operator-escrowed backup key, encrypted logical backups uploaded successfully, metadata-only logs were emitted, and cron was restored to `30 18 * * *`. Latest readback showed deployment `49768015-83e6-4fb9-80a9-049ceefc7c57` as `SUCCESS`, with no public URL and no running replica between cron invocations. | `services\backup-worker\README.md`; `services\backup-worker\Dockerfile` |
+| P7-06 | Configure Railway native Postgres backups. | Blocked | Requires Railway backup schedule/readback mutation or dashboard/API evidence. | `docs\runbooks\railway-backup-restore.md` |
+| P7-07 | Prove backup and restore drill. | In progress | Fresh-key logical backup validation passed: `backup_uploaded` logged artifact `litellm-postgres-20260606T171804Z-daily.dump.enc` with encrypted SHA-256 `f831b67877b303a60d42dbdd3e1a89a9dda3fba4428cec92eb74accece0615127` and encrypted size `241120` bytes; archive-list `restore_check_passed` logged against validation artifact `litellm-postgres-20260606T171903Z-daily.dump.enc`. Fresh restore-drill Postgres service and disposable LiteLLM restored-database validation are still required. | `docs\runbooks\off-platform-logical-backup-restore.md`; `docs\runbooks\litellm-postgres-outage.md` |
+| P7-08 | Configure alerts and manual staging review cadence. | Blocked | Manual spend/error review is documented, but backup-failure push visibility still requires a dead-man success ping, Railway cron-failure notification, or equivalent sealed configuration. | `docs\runbooks\budget-spend-alert-response.md` |
+| P7-09 | Validate and review Phase 7 before marking done. | Blocked | Repository-side validation and GPT/Opus review passed. Railway readbacks, restore drill evidence, RPO/RTO measurement, and backup-failure alert evidence remain blocked until approved infrastructure mutations and sealed credentials exist. | This file |
+
+## Phase 7 exit criteria tracker
+
+| Exit criterion | Status | Evidence / blocker |
+| --- | --- | --- |
+| Backup job succeeds in staging. | Done | Fresh operator-escrowed `BACKUP_ENCRYPTION_KEY` is set as a sealed backup-worker variable; encrypted backup upload succeeded with metadata-only logs and bucket object count `8`. Daily cron restored to `30 18 * * *`. |
+| Restore drill succeeds into a fresh staging database. | Blocked | Requires encrypted artifact, fresh restore-drill Postgres service, and restore execution. |
+| Restored database supports LiteLLM virtual-key auth. | Blocked | Requires disposable LiteLLM validation against restored database or a controlled maintenance-window repoint. |
+| Revoked-key reconciliation procedure is documented. | Done | Procedure is documented in `docs\runbooks\litellm-virtual-key-revocation.md`; concrete ledger location/evidence must still be recorded during the restore drill. |
+| RPO/RTO are documented. | Blocked | Requires measured restore drill and confirmed schedules. |
+| Budget/error/backup alerts are configured. | Blocked | Manual spend/error checks are documented; push-style backup-failure alert configuration remains pending. |
+| Production cutover/rollback runbook draft exists. | Done | `docs\runbooks\railway-deploy-rollback.md` exists as a draft; production-specific IDs/domains remain intentionally deferred until production exists. |
 
 ## Latest Phase 0 technical validation
 

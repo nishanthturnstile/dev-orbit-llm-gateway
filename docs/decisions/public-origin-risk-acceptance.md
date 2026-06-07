@@ -1,6 +1,6 @@
 # Public-origin LiteLLM risk acceptance
 
-**Status:** Approved for Phase 0; selected for MVP direction, staging/production controls must be revisited  
+**Status:** Approved for Phase 0; Phase 6 API-only staging preparation in progress; public ingress remains gated
 **Date opened:** 2026-06-05  
 **Related tracker:** `docs\operations\implementation-status.md`
 
@@ -9,6 +9,8 @@
 Phase 0 and the MVP will use a public Railway/custom endpoint for `litellm-proxy` protected by LiteLLM-native authentication and controls.
 
 Cloudflare Tunnel, Cloudflare Access, WAF, or an edge origin guard are deferred hardening options, not the Phase 0 default.
+
+Phase 6 enables the LiteLLM Admin UI for private staging testing with sealed strong credentials. Public Admin UI exposure remains gated until public-origin controls are explicitly approved and validated.
 
 ## Why this can work
 
@@ -40,6 +42,22 @@ Compared with the previous Cloudflare Tunnel + Access design, this accepts these
 - Alerts exist for spend spikes, budget exhaustion, 401/403 spikes, provider failures, and gateway 5xx.
 - Key distribution, revocation, and rotation are documented.
 - The decision has an owner and a review/expiry date.
+
+## Phase 6 staging/MVP gate
+
+Phase 6 repository preparation may proceed, but public ingress must not be created until these items are closed:
+
+| Gate | Status |
+| --- | --- |
+| `dev-search` provider path | Closed for private validation; rotated staged Perplexity key passed targeted `dev-search` validation and the disposable validation key was blocked. |
+| Exposed control-plane staging secrets | Closed by operator confirmation; staging keys were rotated before public exposure. |
+| Admin UI posture | Enabled for private staging testing with sealed strong credentials. Public Admin UI exposure remains gated. |
+| Public route matrix | Proposed required routes: `/v1/chat/completions`, `/v1/embeddings`, and `/v1/models`; optional compatibility routes remain blocked unless a supported client requires them. |
+| Public readiness behavior | Approved for Phase 6 staging proof: public `/health/readiness` may return `200`. |
+| Public domain path | Approved for Phase 6 staging proof: use Railway-generated public domain first; custom domain is deferred. |
+| Alerting path | Explicit Phase 6 staging-proof risk exception: operator deferred active alerting for now. Revisit before production or broader pilot. |
+| Budget/rate-limit defaults | Approved initial generous defaults: staging disposable validation key USD 5 max budget, 24h duration, 120 RPM, 300k TPM, 5 max parallel requests; MVP per-developer default USD 10/day, USD 100/month, 120 RPM, 300k TPM, 5 max parallel requests. Values remain configurable through LiteLLM key/team policy. |
+| Cloudflare/edge hardening | Removed from Phase 6 scope. Do not configure or deploy Cloudflare Tunnel, Access, WAF, service tokens, or edge origin guards for this phase. |
 
 ## Open approvals
 

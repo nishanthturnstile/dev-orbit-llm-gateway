@@ -40,3 +40,7 @@ Any wrapper requirement must be documented before the tool can be marked `Suppor
 After adding OpenAI credits, `scripts\phase0-validate-litellm.ps1` succeeded for chat and streaming through the public LiteLLM endpoint.
 
 The OpenAI-compatible validation script is accepted as sufficient for Phase 2 planning. Named-tool compatibility remains deferred to Phase 8 and must be validated before a tool is marked `Supported`.
+
+## Phase 6 note
+
+Phase 6 public-origin validation may prove the staging public API with the OpenAI-compatible validator and disposable LiteLLM virtual keys. This does not change named developer-tool status; Continue.dev, Cline/Roo-style tools, Aider, and Copilot CLI remain Phase 8 compatibility work unless explicitly pulled forward.

@@ -24,3 +24,7 @@ jobs:
       - name: Validate smoke script shape
         shell: pwsh
         run: ./scripts/smoke-railway.ps1 -ValidateOnly
+
+      - name: Validate Phase 6 public-origin validator shape
+        shell: pwsh
+        run: ./scripts/phase6-validate-public-origin.ps1 -ValidateOnly

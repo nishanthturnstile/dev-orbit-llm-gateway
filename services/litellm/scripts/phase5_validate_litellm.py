@@ -241,6 +241,7 @@ def main() -> int:
     parser.add_argument("--allow-dev-search-deferred", action="store_true")
     parser.add_argument("--include-rpm-enforcement", action="store_true")
     parser.add_argument("--key-summary-only", action="store_true")
+    parser.add_argument("--admin-ui-mode", choices=("disabled", "enabled"), default="disabled")
     args = parser.parse_args()
 
     master_key = os.getenv("LITELLM_MASTER_KEY", "")
@@ -362,7 +363,7 @@ def main() -> int:
             search_body = {
                 "model": "dev-search",
                 "messages": [{"role": "user", "content": "Reply with exactly OK."}],
-                "max_tokens": 10,
+                "max_tokens": 16,
             }
             status, content = request(args.base_url, "/v1/chat/completions", method="POST", bearer=dev_key, body=search_body)
             add_success_or_detail(
@@ -388,10 +389,30 @@ def main() -> int:
         add_http_check(checks, "developer key admin route denied", status, content, {401, 403}, "developer key denied admin route")
 
         status, content = request(args.base_url, "/ui")
-        add_http_check(checks, "/ui disabled", status, content, {404}, "/ui returned 404")
+        if args.admin_ui_mode == "enabled":
+            add_success_or_detail(
+                checks,
+                "/ui enabled",
+                status,
+                200 <= status < 300 and not contains_forbidden_detail(content),
+                "/ui returned login shell",
+                content,
+            )
+        else:
+            add_http_check(checks, "/ui disabled", status, content, {404}, "/ui returned 404")
 
         status, content = request(args.base_url, "/ui", bearer=dev_key)
-        add_http_check(checks, "developer key /ui denied", status, content, {404}, "/ui returned 404")
+        if args.admin_ui_mode == "enabled":
+            add_success_or_detail(
+                checks,
+                "developer key /ui shell does not leak",
+                status,
+                200 <= status < 300 and not contains_forbidden_detail(content),
+                "/ui returned login shell without secret leakage",
+                content,
+            )
+        else:
+            add_http_check(checks, "developer key /ui denied", status, content, {404}, "/ui returned 404")
 
         for path in ("/docs", "/redoc", "/openapi.json"):
             status, content = request(args.base_url, path)

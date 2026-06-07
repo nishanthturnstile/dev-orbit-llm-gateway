@@ -7,8 +7,8 @@ This document records the non-secret Phase 5 validation plan and evidence shape 
 | Decision | Value |
 | --- | --- |
 | Provider scope | OpenAI-backed aliases first |
-| `dev-search` | Alias remains present; runtime validation blocked until a valid approved `PERPLEXITY_API_KEY` is sealed in Railway |
-| Admin UI | Disabled with `DISABLE_ADMIN_UI=true` |
+| `dev-search` | Alias remains present; runtime validation passed after operator rotated the staged `PERPLEXITY_API_KEY` |
+| Admin UI | Enabled for private staging test with strong `UI_USERNAME` / `UI_PASSWORD`; no public URL exists |
 | OpenAPI schema | Disabled with `NO_OPENAPI=True` |
 | HTTP validation path | Private/internal Railway path |
 | DB-backed model state | Keep `store_model_in_db: true` |
@@ -16,11 +16,11 @@ This document records the non-secret Phase 5 validation plan and evidence shape 
 | Validation spend cap | USD 1 total |
 | Durable public ingress | Not created in Phase 5 |
 
-The pinned LiteLLM image still served the Admin UI shell with only the documented `DISABLE_ADMIN_UI=true` flag. Phase 5 therefore also enforces a container-level startup guard that returns 404 for `/ui`, `/ui/*`, and the LiteLLM UI asset prefix when that flag is enabled.
+The pinned LiteLLM image still served the Admin UI shell with only the documented `DISABLE_ADMIN_UI=true` flag. Phase 5 therefore also enforces a container-level startup guard that returns 404 for `/ui`, `/ui/*`, and the LiteLLM UI asset prefix when that flag is enabled. Phase 6 private staging testing later set `DISABLE_ADMIN_UI=false` with sealed Admin UI credentials.
 
 ## Current status
 
-Phase 5 runtime validation is blocked only on `dev-search`. Railway `litellm-proxy` deployment `dceac0a0-a478-4bc4-991d-45b124f56358` is healthy with no public URL. Runtime validation reached LiteLLM and Postgres; readiness, auth rejection, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, RPM enforcement, Admin UI/docs/ReDoc/OpenAPI closure, admin route denial, forbidden/direct-provider alias denial, spend metadata access, key blocking, and fresh log hygiene passed. `dev-search` reaches Perplexity but fails with provider `401` because the staged `PERPLEXITY_API_KEY` is invalid.
+Phase 5 private runtime validation now passes the former `dev-search` blocker after the operator rotated the staged `PERPLEXITY_API_KEY`. Railway `litellm-proxy` deployment `095bc349-2e77-4552-9ab4-ff36d54bb506` is healthy with no public URL. Private checks confirmed readiness, auth rejection, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, developer admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, Admin UI private reachability, docs/ReDoc/OpenAPI closure, and targeted `dev-search` validation with immediate disposable-key blocking.
 
 ## Required runtime checks
 
@@ -30,7 +30,7 @@ Phase 5 runtime validation is blocked only on `dev-search`. Railway `litellm-pro
 4. Streaming works on `dev-fast`.
 5. Embeddings work on `dev-embed`.
 6. Vision is validated if the OpenAI account supports it; otherwise record the provider/account limitation.
-7. `dev-search` succeeds with a valid approved Perplexity key; a provider `401` keeps Phase 5 blocked.
+7. `dev-search` succeeds with a valid approved Perplexity key.
 8. `sensitive-code` and direct wildcard/provider model names fail.
 9. Developer keys cannot access admin/control routes.
 10. `/ui`, `/docs`, `/redoc`, and `/openapi.json` are unavailable or protected.
@@ -43,29 +43,30 @@ Phase 5 runtime validation is blocked only on `dev-search`. Railway `litellm-pro
 
 | Check | Result |
 | --- | --- |
-| Deployment | `dceac0a0-a478-4bc4-991d-45b124f56358` is `SUCCESS` |
+| Deployment | `095bc349-2e77-4552-9ab4-ff36d54bb506` is `SUCCESS` |
 | Public URL | None |
 | Readiness | `200`, DB connected |
 | Missing/invalid auth | `401` rejection |
 | OpenAI-backed chat aliases | Passed for `dev-fast`, `dev-code`, `dev-reasoning`, `dev-long-context`, `batch-analysis`, and `dev-vision` |
 | Streaming | Passed on `dev-fast` |
 | Embeddings | Passed on `dev-embed` |
-| `dev-search` | Blocked; provider returns `401` for the staged `PERPLEXITY_API_KEY` |
+| `dev-search` | Passed with rotated staged `PERPLEXITY_API_KEY`; disposable validation key was blocked after test |
 | Forbidden alias | `sensitive-code` denied |
 | Developer admin route | Denied |
-| Admin UI/docs/ReDoc/OpenAPI | Disabled/protected |
+| Admin UI/docs/ReDoc/OpenAPI | Admin UI enabled privately with sealed credentials; docs/ReDoc/OpenAPI remain disabled/protected |
 | Spend metadata | Readable from approved operator context |
 | Disposable key blocking | Passed |
 | Key metadata persistence | Passed after controlled restart |
 | RPM enforcement | Passed with a dedicated disposable key: first request succeeded, second request returned `429` |
 | Log hygiene | Fresh bounded scan after the log-redaction wrapper found zero secret-key, DB URL, private-host, or traceback matches |
 
-## Current blockers before Phase 6
+## Current blockers before public Phase 6 ingress
 
 | Blocker | Required closure |
 | --- | --- |
-| Invalid Perplexity credential | Rotate or replace `PERPLEXITY_API_KEY` through an operator-controlled terminal, restart `litellm-proxy`, and rerun private validation without `--allow-dev-search-deferred`. |
-| Exposed staging secrets during validation readback | Rotate exposed provider/LiteLLM staging credentials before real use, or record an explicit staging-only risk acceptance. Do not reuse exposed values for production. |
+| Exposed staging secrets during validation readback | Rotate exposed provider/LiteLLM/database/admin/generated-key staging credentials before public ingress. Do not risk-accept exposed control-plane secrets for a public origin and do not reuse exposed values for production. |
+
+Creating a Railway public domain remains blocked until exposed control-plane secret rotation is confirmed and either active alerting is configured or an explicit public-ingress risk exception is recorded.
 
 ## Evidence rules
 
