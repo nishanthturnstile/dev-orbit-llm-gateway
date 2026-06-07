@@ -11,7 +11,6 @@ This runbook defines the handoff from Phase 4 shell provisioning to Phase 5 runt
 | Postgres | `Postgres` (`1494db55-53c1-4ff1-bbe0-312340190eb7`) is deployed and healthy. |
 | `litellm-proxy` | Sourceless shell only; no deployment or public URL. |
 | `backup-worker` | Sourceless shell only; no deployment or public URL. |
-| `cloudflared-tunnel` | Sourceless shell only; no deployment or public URL. |
 
 ## Phase 4 boundary
 
@@ -34,7 +33,6 @@ Current Dockerfiles use repository-root-relative `COPY` paths. Keep Railway buil
 | --- | --- | --- | --- | --- |
 | `litellm-proxy` | Phase 5 | Repository root | `services/litellm/Dockerfile` | `/health/readiness` |
 | `backup-worker` | Phase 7 | Repository root | `services/backup-worker/Dockerfile` | None until backup schedule and object storage are approved. |
-| `cloudflared-tunnel` | Phase 6 or later | Repository root | `services/cloudflared-tunnel/Dockerfile` | None until Cloudflare tunnel/access hardening is approved. |
 
 ## Phase 5 minimum checklist before first `litellm-proxy` deployment
 
@@ -81,7 +79,7 @@ The validator prints redacted pass/fail JSON and blocks disposable validation ke
 
 Phase 4 validated topology and reference wiring:
 
-- `Postgres`, `litellm-proxy`, `backup-worker`, and `cloudflared-tunnel` exist in the same Railway project/environment.
+- `Postgres`, `litellm-proxy`, and `backup-worker` exist in the same Railway project/environment.
 - App variables reference `${{Postgres.DATABASE_URL}}`.
 - No public app service URLs exist.
 - No public Postgres URL is documented or used by app variables.
@@ -99,6 +97,9 @@ Do not run these until the owning later phase explicitly approves them:
 - `railway domain`
 - Setting provider API keys
 - Setting `LITELLM_MASTER_KEY`
-- Setting `TUNNEL_TOKEN`
 - Setting backup object storage credentials
 - Setting generated LiteLLM developer virtual keys
+
+## Cloudflare tunnel cleanup note
+
+Cloudflare Tunnel/Access/WAF and edge-origin services are not part of the current staging deployment path. An earlier sourceless Railway shell may still exist from Phase 4; deleting it requires explicit operator approval before any Railway mutation.

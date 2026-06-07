@@ -1,6 +1,6 @@
 # Local config validation
 
-Phase 2 config validation checks local artifacts only. It must not call Railway, OpenAI, Cloudflare, backup storage, or any provider.
+Phase 2 config validation checks local artifacts only. It must not call Railway, OpenAI, backup storage, tunnels, edge services, or any provider.
 
 ## Linux/macOS or Git Bash
 

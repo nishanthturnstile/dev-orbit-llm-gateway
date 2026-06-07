@@ -10,7 +10,7 @@ Future scripts should:
 - Use bounded Railway logs if Railway inspection is needed.
 - Prefer placeholders and environment references over literal values.
 - Fail clearly on unsafe config.
-- Avoid mutating Railway, Cloudflare, provider, database, or tunnel resources unless the operator approved the exact action.
+- Avoid mutating Railway, provider, database, tunnel, or edge-service resources unless the operator approved the exact action.
 
 Planned later-phase scripts include secret checks, LiteLLM config linting, Railway smoke checks, and virtual-key creation helpers.
 

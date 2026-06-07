@@ -1,0 +1,29 @@
+# Local UI evaluation secrets and runtime data.
+.env
+*.env
+!env.example
+
+# Runtime state must not be committed.
+data/
+logs/
+uploads/
+open-webui-data/
+mongo-data/
+meili-data/
+meili_data*/
+vector-data/
+pgvector-data/
+rag-data/
+
+# Real generated configs may include secrets or environment-specific hosts.
+open-webui.env
+docker-compose.override.yaml
+
+# Local databases and exports.
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+*.enc
+*.zip

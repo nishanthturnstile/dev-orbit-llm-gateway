@@ -1,12 +1,12 @@
 # Railway project and service setup runbook
 
-This runbook records the Phase 4 durable staging setup flow. It is intentionally non-secret: commands may show names and IDs, but must not print resolved Railway variables, database URLs, provider keys, Cloudflare tokens, LiteLLM keys, generated virtual keys, backup credentials, or private hostnames.
+This runbook records the Phase 4 durable staging setup flow. It is intentionally non-secret: commands may show names and IDs, but must not print resolved Railway variables, database URLs, provider keys, LiteLLM keys, generated virtual keys, backup credentials, or private hostnames.
 
 ## Scope
 
 Phase 4 owns durable Railway project, environment, database, and sourceless app service shell provisioning.
 
-Phase 4 does not attach GitHub source, deploy app containers, create public domains, configure provider secrets, configure Cloudflare tunnel tokens, configure backup credentials, or generate LiteLLM developer keys.
+Phase 4 does not attach GitHub source, deploy app containers, create public domains, configure provider secrets, configure backup credentials, or generate LiteLLM developer keys.
 
 ## Approved target
 
@@ -101,7 +101,6 @@ Create empty services only:
 ```powershell
 & $railway add --service litellm-proxy --json
 & $railway add --service backup-worker --json
-& $railway add --service cloudflared-tunnel --json
 ```
 
 Created app shell IDs:
@@ -110,7 +109,6 @@ Created app shell IDs:
 | --- | --- |
 | `litellm-proxy` | `335b0f28-2d4c-42b7-b3c9-063bcf296a25` |
 | `backup-worker` | `f1e6e49c-8320-4b30-a070-d59d285f520c` |
-| `cloudflared-tunnel` | `ec0b7723-219f-4f54-8896-3ed010ed1e3d` |
 
 Do not run `railway up`, connect repository source, connect Docker images, or generate domains in Phase 4.
 
@@ -124,7 +122,7 @@ Set only non-secret variables and Railway service references. Use `--skip-deploy
 & $railway variable set ENVIRONMENT=staging 'LITELLM_DATABASE_URL=${{Postgres.DATABASE_URL}}' --service backup-worker --project 0b1bc0ec-4ace-47c3-bd13-214256c27ad5 --environment staging --skip-deploys --json
 ```
 
-Do not set provider keys, `LITELLM_MASTER_KEY`, `TUNNEL_TOKEN`, backup credentials, encryption keys, production secrets, or generated virtual keys in Phase 4.
+Do not set provider keys, `LITELLM_MASTER_KEY`, backup credentials, encryption keys, production secrets, or generated virtual keys in Phase 4.
 
 ## Future-safe service settings
 
@@ -137,8 +135,6 @@ The app shells may store non-secret build/deploy settings before source is attac
 & $railway environment edit --project 0b1bc0ec-4ace-47c3-bd13-214256c27ad5 --environment staging --service-config litellm-proxy deploy.healthcheckTimeout 300 --json
 & $railway environment edit --project 0b1bc0ec-4ace-47c3-bd13-214256c27ad5 --environment staging --service-config backup-worker build.builder DOCKERFILE --json
 & $railway environment edit --project 0b1bc0ec-4ace-47c3-bd13-214256c27ad5 --environment staging --service-config backup-worker build.dockerfilePath services/backup-worker/Dockerfile --json
-& $railway environment edit --project 0b1bc0ec-4ace-47c3-bd13-214256c27ad5 --environment staging --service-config cloudflared-tunnel build.builder DOCKERFILE --json
-& $railway environment edit --project 0b1bc0ec-4ace-47c3-bd13-214256c27ad5 --environment staging --service-config cloudflared-tunnel build.dockerfilePath services/cloudflared-tunnel/Dockerfile --json
 ```
 
 These settings do not attach source. Source attachment is Phase 5+.
@@ -164,5 +160,8 @@ Expected Phase 4 end state:
 - App services are sourceless, undeployed, and have no public URLs.
 - No app service has public domains.
 - App service variables use `${{Postgres.DATABASE_URL}}`.
-- No provider, Cloudflare, LiteLLM master, backup, production, or generated developer credentials are set.
+- No provider, LiteLLM master, backup, production, or generated developer credentials are set.
 
+## Cloudflare tunnel cleanup note
+
+Cloudflare Tunnel/Access/WAF and edge-origin services are not part of the current implementation path. A sourceless `cloudflared-tunnel` Railway shell was created during earlier Phase 4 work and must be treated as a cleanup target only after explicit operator approval for the exact Railway mutation.

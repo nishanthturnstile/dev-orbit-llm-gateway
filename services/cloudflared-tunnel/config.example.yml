@@ -1,9 +1,0 @@
-# Deferred Cloudflare Tunnel example only.
-# Prefer dashboard-managed remote tunnels if this hardening path is approved.
-tunnel: <cloudflare-tunnel-id-or-name>
-credentials-file: /etc/cloudflared/<cloudflare-tunnel-id>.json
-
-ingress:
-  - hostname: <admin-or-api-hostname.example.com>
-    service: http://<internal-service-host>:<port>
-  - service: http_status:404

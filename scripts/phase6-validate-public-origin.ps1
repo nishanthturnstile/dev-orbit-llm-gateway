@@ -16,7 +16,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ($ValidateOnly) {
-    Write-Host "Phase 6 public-origin validator shape is valid. Runtime execution requires explicit endpoint and key inputs."
+    Write-Host "Public-origin validator shape is valid. Runtime execution requires explicit endpoint and key inputs."
     exit 0
 }
 
@@ -182,7 +182,7 @@ if ($IncludeLongStreamingProbe) {
     $longStream = Invoke-Phase6Request -Path "/v1/chat/completions" -Method POST -Headers $devHeaders -ContentType "application/json" -Body $longStreamBody -TimeoutSec 180
     $timer.Stop()
     $longDetail = if ($longStream.Content.Contains("data:")) { "stream chunks received in $([int]$timer.Elapsed.TotalSeconds)s" } else { $longStream.Content }
-    Add-Phase6Result $results "long streaming edge probe" $longStream.StatusCode (($longStream.StatusCode -ge 200 -and $longStream.StatusCode -lt 300 -and $longStream.Content.Contains("data:")) -and -not (Test-ForbiddenDetail $longStream.Content)) $longDetail
+    Add-Phase6Result $results "long streaming probe" $longStream.StatusCode (($longStream.StatusCode -ge 200 -and $longStream.StatusCode -lt 300 -and $longStream.Content.Contains("data:")) -and -not (Test-ForbiddenDetail $longStream.Content)) $longDetail
 }
 
 if ($IncludeModels) {

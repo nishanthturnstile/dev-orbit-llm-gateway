@@ -2,7 +2,7 @@
 
 Phase 4 created durable Railway staging infrastructure for the Internal LLM Gateway. This file records only non-secret names, IDs, service boundaries, and variable-reference shapes.
 
-Do not store resolved Railway variables, database URLs, provider keys, LiteLLM keys, generated virtual keys, Cloudflare tunnel tokens, backup credentials, private hostnames, or public service domains in this file.
+Do not store resolved Railway variables, database URLs, provider keys, LiteLLM keys, generated virtual keys, backup credentials, private hostnames, or public service domains in this file.
 
 ## Project and environment
 
@@ -26,7 +26,6 @@ The default `production` environment exists because Railway creates it automatic
 | `Postgres` | `1494db55-53c1-4ff1-bbe0-312340190eb7` | Managed Postgres deployment `9187450c-4db4-4c43-bb79-5f1bc3611ffc` is `SUCCESS`; one replica running; volume `postgres-volume` is ready. | Railway managed image | None recorded |
 | `litellm-proxy` | `335b0f28-2d4c-42b7-b3c9-063bcf296a25` | Deployment `095bc349-2e77-4552-9ab4-ff36d54bb506` is `SUCCESS`; Phase 6 public validation passed. | Local upload; no GitHub source attachment | Railway-generated staging domain |
 | `backup-worker` | `f1e6e49c-8320-4b30-a070-d59d285f520c` | Scheduled cron worker deployed from local source; latest deployment `49768015-83e6-4fb9-80a9-049ceefc7c57` is `SUCCESS` with no running replica between cron invocations. | Local upload; no GitHub source attachment | None |
-| `cloudflared-tunnel` | `ec0b7723-219f-4f54-8896-3ed010ed1e3d` | Sourceless shell only; no deployment. | No | None |
 
 The approved planning name for Postgres was `litellm-postgres`, but Railway's managed Postgres template created the service as `Postgres`. Because Railway variable references are service-name and case sensitive, Phase 4 uses the actual service name in references.
 
@@ -91,15 +90,10 @@ The LiteLLM Admin UI is enabled for private staging testing with sealed `UI_USER
 | `ENVIRONMENT` | `staging` |
 | `LITELLM_DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
 
-### `cloudflared-tunnel`
-
-No user-provided variables were set in Phase 4.
-
 ## Variables intentionally not set
 
 The following are intentionally deferred until their roadmap phase:
 
-- `TUNNEL_TOKEN`
 - Backup object storage credentials
 - Backup encryption key
 - Generated LiteLLM developer virtual keys
@@ -113,7 +107,6 @@ Do not attach source until Phase 5+ explicitly approves runtime deployment and s
 | --- | --- | --- | --- | --- |
 | `litellm-proxy` | Repository root | `services/litellm/Dockerfile` | `services/litellm/**`, `config/litellm/**`, `scripts/validate-litellm-config.py` | Healthcheck path configured as `/health/readiness`; container port remains `4000`. |
 | `backup-worker` | Repository root | `services/backup-worker/Dockerfile` | `services/backup-worker/**` | Do not deploy until backup storage, encryption, schedule, and restore-check policy are approved. |
-| `cloudflared-tunnel` | Repository root | `services/cloudflared-tunnel/Dockerfile` | `services/cloudflared-tunnel/**`, `config/cloudflare/**` | Do not deploy until Cloudflare tunnel/access hardening is approved and `TUNNEL_TOKEN` is provided as a sealed Railway variable. |
 
 Current Dockerfiles use repository-root-relative `COPY` paths. Keep Railway build context at the repository root when source is attached; do not set a service root directory to a service subfolder unless the Dockerfiles are changed first.
 
@@ -126,9 +119,13 @@ Readback checks confirmed:
 - App services are sourceless, undeployed, and have no public URLs.
 - `Postgres` is healthy and has no public URL recorded by `railway service list`.
 - App service variables use `${{Postgres.DATABASE_URL}}` reference shapes, not resolved values.
-- No provider keys, LiteLLM master key, Cloudflare token, backup credentials, or generated virtual keys were set.
+- No provider keys, LiteLLM master key, backup credentials, or generated virtual keys were set.
 
 Phase 4 validates private-network topology and variable-reference wiring only. Live app-to-Postgres connectivity proof is deferred to Phase 5 after source attachment, runtime secrets, LiteLLM policy, and deployment controls are configured.
+
+## Cloudflare tunnel cleanup note
+
+An earlier Phase 4 shell service named `cloudflared-tunnel` was provisioned without source, deployment, variables, or public URL. Cloudflare Tunnel/Access/WAF and edge-origin services are no longer part of the current implementation path. Removing that Railway shell is a platform mutation and requires explicit operator approval before action.
 
 ## Phase 7 backup-worker preparation
 

@@ -3,7 +3,7 @@
 **Status:** Phase 3 baseline
 **Scope:** Local and GitHub Actions enforcement before durable Railway staging
 
-Phase 3 policy gates validate repository artifacts only. They must not call Railway, OpenAI, Cloudflare, provider APIs, backup storage, tunnels, domains, or deployment endpoints.
+Phase 3 policy gates validate repository artifacts only. They must not call Railway, OpenAI, provider APIs, backup storage, tunnels, edge services, domains, or deployment endpoints.
 
 ## Local validation commands
 
@@ -38,7 +38,7 @@ Phase 3 workflows:
 - Do not use path filters for checks that may later become required.
 - Pin every `uses:` action to a full commit SHA.
 - Use `persist-credentials: false` for checkout.
-- Avoid Railway, provider, Cloudflare, and deployment mutation commands.
+- Avoid Railway, provider, tunnel, edge-service, and deployment mutation commands.
 
 Dependabot is configured for the `github-actions` ecosystem so pinned action SHAs can be updated through reviewable pull requests.
 

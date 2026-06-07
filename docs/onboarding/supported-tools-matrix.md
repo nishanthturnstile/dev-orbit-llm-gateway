@@ -1,6 +1,6 @@
 # Supported tools matrix
 
-**Status:** Draft; OpenAI-compatible validation script is supported, named developer tools deferred to Phase 8
+**Status:** Phase 8 in progress; OpenAI-compatible raw HTTP validation script is supported, named developer tools require live validation
 **Roadmap phase:** Phase 0 and Phase 8 client compatibility
 **Tracker:** `docs\operations\implementation-status.md`
 
@@ -21,7 +21,8 @@
 | Continue.dev | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
 | Cline/Roo-style VS Code tool | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
 | Aider or equivalent CLI | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
-| OpenAI-compatible validation script | Works against public Railway base URL | Works with LiteLLM virtual key | Works | Supported | After OpenAI credits were added, `scripts\phase0-validate-litellm.ps1` generated a LiteLLM virtual key and completed both chat and streaming calls with `200`. |
+| OpenAI-compatible raw HTTP validation script | Works against public Railway base URL | Works with LiteLLM virtual key | Works | Supported | After OpenAI credits were added, `scripts\phase0-validate-litellm.ps1` and the Phase 6 public-origin validator proved chat and streaming through LiteLLM. |
+| OpenAI SDK scripts | Not tested | Not tested | Not tested | Not tested | Raw HTTP validation is proven, but Python/JS SDK calls have not been validated against staging. |
 | Copilot CLI BYOK-compatible usage | Not tested | Not tested | Not tested | Not tested | Provider credits are available; live tool validation has not been run. |
 
 ## Minimum Phase 0 proof
@@ -39,8 +40,12 @@ Any wrapper requirement must be documented before the tool can be marked `Suppor
 
 After adding OpenAI credits, `scripts\phase0-validate-litellm.ps1` succeeded for chat and streaming through the public LiteLLM endpoint.
 
-The OpenAI-compatible validation script is accepted as sufficient for Phase 2 planning. Named-tool compatibility remains deferred to Phase 8 and must be validated before a tool is marked `Supported`.
+The OpenAI-compatible raw HTTP validation script is accepted as sufficient for Phase 2 planning. Named-tool and SDK compatibility remains deferred to Phase 8 and must be validated before a tool is marked `Supported`.
 
 ## Phase 6 note
 
 Phase 6 public-origin validation may prove the staging public API with the OpenAI-compatible validator and disposable LiteLLM virtual keys. This does not change named developer-tool status; Continue.dev, Cline/Roo-style tools, Aider, and Copilot CLI remain Phase 8 compatibility work unless explicitly pulled forward.
+
+## Phase 8 note
+
+Setup instructions and evidence templates live in `docs\onboarding\supported-developer-tool-setup.md`. Do not mark OpenAI SDK scripts or named IDE/CLI tools supported based only on raw HTTP validator evidence.

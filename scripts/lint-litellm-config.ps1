@@ -47,13 +47,20 @@ function Assert-TextContains([string]$RelativePath, [string]$Pattern, [string]$M
 }
 
 function Assert-DockerfilesPinned {
-    $dockerfiles = Get-ChildItem (Join-Path $RepoRoot "services") -Filter "Dockerfile" -Recurse
+    $excludedSegments = @(
+        "{0}.git{0}" -f [System.IO.Path]::DirectorySeparatorChar,
+        "{0}node_modules{0}" -f [System.IO.Path]::DirectorySeparatorChar
+    )
+    $dockerfiles = Get-ChildItem $RepoRoot -Filter "Dockerfile" -Recurse -File | Where-Object {
+        $fullName = $_.FullName
+        -not ($excludedSegments | Where-Object { $fullName.Contains($_) })
+    }
     foreach ($dockerfile in $dockerfiles) {
         $relative = [System.IO.Path]::GetRelativePath($RepoRoot, $dockerfile.FullName)
         $fromLines = Select-String -Path $dockerfile.FullName -Pattern '^\s*FROM\s+(.+)$'
         foreach ($line in $fromLines) {
             $image = $line.Matches[0].Groups[1].Value.Trim()
-            if ($image -match ':latest(?:\s|$)') {
+            if ($image -match ':latest(?:@|\s|$)') {
                 Fail "$relative uses a latest tag: $image"
             }
             if ($image -notmatch '@sha256:[a-f0-9]{64}(?:\s|$)') {
@@ -128,7 +135,6 @@ paths = [
     root / 'services' / 'litellm' / 'config.yaml',
     root / 'config' / 'litellm' / 'model-aliases.yaml',
     root / 'config' / 'litellm' / 'provider-denylist.yaml',
-    root / 'services' / 'cloudflared-tunnel' / 'config.example.yml',
 ]
 workflow_root = root / '.github' / 'workflows'
 if workflow_root.exists():

@@ -16,7 +16,9 @@ Current runbooks:
 - `provider-outage-same-tier-fallback.md` - provider outage response and same-tier fallback gate.
 - `railway-deploy-rollback.md` - Railway deployment rollback and bad-config recovery.
 - `prompt-log-leakage-investigation.md` - prompt/response leakage investigation procedure.
+- `..\operations\staging-proof-gates.md` - Phase 8 staging proof-gate evidence checklist.
+- `..\onboarding\supported-developer-tool-setup.md` - Phase 8 developer-tool setup and validation evidence template.
 
-Later phases will add runbooks for production deployment, custom-domain cutover, and optional Cloudflare/edge outage handling if that hardening layer is introduced.
+Later phases will add runbooks for production deployment and custom-domain cutover. Cloudflare Tunnel/Access/WAF and edge-origin services are not part of the current implementation path.
 
 Do not store secrets, generated virtual keys, database URLs, backup credentials, private hostnames, or raw incident payloads in runbooks.

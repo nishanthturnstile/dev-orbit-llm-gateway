@@ -97,7 +97,7 @@ Never record:
 - generated virtual keys
 - database URLs
 - private Railway hostnames
-- Cloudflare secrets
+- Tunnel or edge-service secrets
 - raw prompts or responses
 - stack traces
 - SQL
@@ -132,7 +132,7 @@ Railway Observability monitors can cover infrastructure thresholds such as CPU, 
 | Public endpoint | Railway-generated staging domain; custom domain deferred. |
 | Public readiness | `/health/readiness` may be publicly reachable and return `200` in staging. |
 | Admin UI | Enabled for private staging testing with sealed strong credentials; public exposure remains gated. |
-| Cloudflare/edge | Removed from Phase 6 scope; do not configure Tunnel, Access, WAF, service tokens, or edge origin guards. |
+| Tunnel/edge services | Removed from Phase 6 scope; do not configure Tunnel, Access, WAF, service tokens, or edge origin guards. |
 | Staging disposable validation key | USD 5 max budget, 24h duration, 120 RPM, 300k TPM, 5 max parallel requests. |
 | MVP per-developer default | USD 10/day, USD 100/month, 120 RPM, 300k TPM, 5 max parallel requests. |
 | Secret rotation | Closed by operator confirmation for staging keys. |

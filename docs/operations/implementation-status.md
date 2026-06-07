@@ -1,7 +1,7 @@
 # Implementation status tracker
 
-**Status date:** 2026-06-06
-**Current phase:** Phase 7 - Backups, restore, alerts, and runbooks (In progress; encrypted logical backup path validated; native backups, fresh restore drill, and alerting still pending)
+**Status date:** 2026-06-07
+**Current phase:** Phase 8 - Staging proof gates and client compatibility (In progress under Phase 7 staging risk exception; production remains blocked by deferred DR/alerting gates)
 **Primary roadmap:** `docs\internal-llm-gateway-implementation-roadmap.md`
 
 ## Status rules
@@ -21,15 +21,30 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | ---: | --- | --- | --- |
 | 0 | Launch-blocker validation and disposable proof spike | Done | Railway + LiteLLM native-auth proof is validated with credited OpenAI chat and streaming through the OpenAI-compatible validation script. Operator accepted script validation for Phase 2 planning and deferred named developer-tool compatibility to Phase 8. Disposable resources are explicitly Phase 0 only and not staging/production despite Railway's default environment name. |
 | 1 | Repository and project structure | Done | Repository-only gate exception accepted while Phase 0 funded provider proof remains blocked. Structure/docs/placeholders added; no Railway/provider resources mutated. |
-| 2 | Local service scaffolding and policy/config authoring | Done | Local scaffolds, LiteLLM runtime config, policy metadata, smoke skeletons, and validation docs are complete. Local YAML/verifier/shell syntax/pytest validation passed. GPT-5.5 and Opus 4.8 reviews approved with no blockers. No Railway/provider/Cloudflare resources were mutated. |
+| 2 | Local service scaffolding and policy/config authoring | Done | Local scaffolds, LiteLLM runtime config, policy metadata, smoke skeletons, and validation docs are complete. Local YAML/verifier/shell syntax/pytest validation passed. GPT-5.5 and Opus 4.8 reviews approved with no blockers. Cloudflare tunnel scaffolds were later removed from the current implementation path during Phase 8 planning cleanup. No Railway/provider/tunnel resources were mutated by that cleanup. |
 | 3 | CI/CD, secret scanning, and policy gates | Done | Local/CI enforcement scripts, GitHub Actions workflows, secret scanning, and image policy gates are complete. Local validation passed; GPT-5.5 approved as-is and Opus 4.8 approved with minor hardening notes that were addressed. No Railway/provider/Cloudflare/GitHub settings were mutated. |
 | 4 | Durable Railway staging provisioning | Done | Durable Railway project `dev-orbit-llm-gateway` and `staging` environment exist. Managed Postgres is healthy; app service shells are sourceless, undeployed, and domainless. Local validation passed; GPT-5.5 and Opus 4.8 reviewed with no blockers. |
 | 5 | LiteLLM deployment and runtime policy validation | Done | `litellm-proxy` deployment `095bc349-2e77-4552-9ab4-ff36d54bb506` is `SUCCESS` with one running replica and no public URL. Private validation passes for readiness, missing/invalid auth, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, docs/ReDoc/OpenAPI closure, Admin UI private reachability with sealed credentials, and targeted `dev-search` validation with the rotated Perplexity key. |
 | 6 | Public-origin hardening and access validation | Done | Railway-generated staging endpoint is live. Missing/invalid auth is blocked, valid disposable keys succeed on approved `/v1` chat/search/embedding routes, developer key admin route is denied, docs/ReDoc/OpenAPI are blocked, Admin UI loads at `/ui/` with sealed credentials, and disposable public validation key was blocked. Active alerting is explicitly risk-accepted as deferred for this staging proof. |
-| 7 | Backups, restore, alerts, and runbooks | In progress | Phase 7 plan and repository-side implementation were reviewed with GPT-5.5 and Opus 4.8. Backup-worker script hardening and required runbook drafts are complete locally. Staging Railway Object Storage bucket `litellm-staging-backups` exists in `sin` and backup-worker rclone variables are configured. After prior secret-exposure remediation, the operator added a fresh escrowed `BACKUP_ENCRYPTION_KEY`; fresh encrypted backup artifacts uploaded successfully, archive-list `restore-check` passed against the validation artifact, and the daily backup cron was restored. Native Railway backup evidence, fresh restore-drill database validation, RPO/RTO measurement, and push-style backup-failure alerting remain pending. |
-| 8 | Staging proof gates and client compatibility | Not started | Depends on deployed staging stack. |
+| 7 | Backups, restore, alerts, and runbooks | In progress | Staging backup-worker path is validated, and the operator accepted a staging-only risk exception to defer native backup evidence, fresh restore drill, restored DB auth validation, RPO/RTO measurement, and backup-failure push alerting to the final pre-production gate. These remain production blockers. |
+| 8 | Staging proof gates and client compatibility | In progress | Phase 8 plan has GPT-5.5 and Opus 4.8 review. Staging risk exception, proof-gate checklist, developer-tool setup doc, and production readiness draft are added. Runtime/client evidence still needs operator endpoint/key/tool inputs. |
 | 9 | Production deployment, cutover, and pilot | Not started | Depends on all staging proof gates. |
 | 10 | Post-pilot hardening and deferred capabilities | Not started | Depends on production pilot findings. |
+
+## Current direction correction
+
+| Item | Status | Evidence / blocker |
+| --- | --- | --- |
+| Remove Cloudflare tunnel/access/edge from current implementation path. | Done | Repository scaffold cleanup and source-doc alignment are complete. `services\cloudflared-tunnel`, `config\cloudflare`, `tests\smoke\test_cloudflare_block.py`, the `.env.example` tunnel placeholder, and the hard-coded cloudflared YAML lint path were removed. Historical evidence and defensive secret-scanning rules are preserved. Local lint, secret scan, and smoke collection/tests passed. |
+| Railway `cloudflared-tunnel` shell cleanup. | Blocked | A sourceless shell may still exist from earlier Phase 4 work. Deletion is a Railway mutation and requires explicit operator approval before action. |
+| Phase 8 proof execution. | In progress | Proceeding under `docs\decisions\phase-7-staging-risk-exception.md`; deferred Phase 7 items remain production blockers. |
+
+## Chat UI evaluation add-on
+
+| Item | Status | Evidence / blocker |
+| --- | --- | --- |
+| Open WebUI and LibreChat staging evaluation scaffold. | In progress | `chat-ui-evaluation` documents separate staging UI services, UI-only data stores, teardown requirements, scoped LiteLLM UI keys, and exact Railway approval boundaries. |
+| Open WebUI and LibreChat staging deployment. | Blocked | Exact Railway mutation manifest is recorded in `chat-ui-evaluation\railway-services.md`; execution requires explicit operator approval before creating services, volumes, public domains, variables, LiteLLM virtual keys, or deployments. |
 
 ## Phase 0 task tracker
 
@@ -88,18 +103,18 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | ID | Roadmap item | Status | Evidence / blocker | Artifact |
 | --- | --- | --- | --- | --- |
 | P1-01 | Confirm Phase 1 can proceed while Phase 0 provider proof remains blocked. | Done | Operator approved repository-only Phase 1 work with no Railway/provider mutations and no claim that Phase 0 runtime proof is complete. | `docs\decisions\phase-1-repository-gate-exception.md` |
-| P1-02 | Confirm final service list and deferred components. | Done | V1 boundary keeps LiteLLM Proxy, Railway managed Postgres, future backup worker, and optional deferred cloudflared hardening; custom admin, edge, and Redis components remain deferred. | `docs\decisions\v1-service-boundaries.md` |
+| P1-02 | Confirm final service list and deferred components. | Done | V1 boundary keeps LiteLLM Proxy, Railway managed Postgres, and backup worker. Custom admin, edge-origin services, Redis, and Cloudflare Tunnel/Access/WAF remain out of current implementation unless a later design decision reintroduces them. | `docs\decisions\v1-service-boundaries.md` |
 | P1-03 | Add root repository README. | Done | Root README describes purpose, Railway target, service list, local development approach, deployment model, and source docs. | `README.md` |
 | P1-04 | Add `.env.example` with placeholder variable names only. | Done | Placeholder env file contains no real secrets, generated virtual keys, URLs, or private hostnames. | `.env.example` |
-| P1-05 | Add service README placeholders. | Done | LiteLLM, backup worker, and cloudflared service boundaries documented. | `services\litellm\README.md`; `services\backup-worker\README.md`; `services\cloudflared-tunnel\README.md` |
-| P1-06 | Add config and docs homes. | Done | Railway, Cloudflare, LiteLLM config notes, runbooks, scripts, and tests homes added as tracked files. | `config\railway\README.md`; `config\cloudflare\README.md`; `config\litellm\README.md`; `docs\runbooks\README.md`; `scripts\README.md`; `tests\README.md` |
+| P1-05 | Add service README placeholders. | Done | LiteLLM and backup-worker service boundaries are documented. The earlier cloudflared placeholder was removed from the current implementation path during Phase 8 planning cleanup. | `services\litellm\README.md`; `services\backup-worker\README.md` |
+| P1-06 | Add config and docs homes. | Done | Railway, LiteLLM config notes, runbooks, scripts, and tests homes are tracked. The earlier Cloudflare docs home was removed from the current implementation path during Phase 8 planning cleanup. | `config\railway\README.md`; `config\litellm\README.md`; `docs\runbooks\README.md`; `scripts\README.md`; `tests\README.md` |
 | P1-07 | Record repository structure. | Done | Current tree, Phase 0 artifacts, Phase 1 additions, deferred directories, and config source-of-truth decision documented. | `docs\operations\repository-structure.md` |
 
 ## Phase 1 exit criteria tracker
 
 | Exit criterion | Status | Evidence / blocker |
 | --- | --- | --- |
-| The repo documents Railway + Cloudflare Tunnel + LiteLLM architecture, service boundaries, and deferred components. | Done | Root README, service READMEs, config docs, `v1-service-boundaries.md`, and `repository-structure.md` document included and deferred components. |
+| The repo documents Railway + LiteLLM architecture, service boundaries, and deferred components. | Done | Root README, service READMEs, config docs, `v1-service-boundaries.md`, and `repository-structure.md` document included and deferred components. Cloudflare tunnel/access/edge is not part of current implementation. |
 | No real secrets or generated credentials are present. | Done | Phase 1 files use placeholders only and do not add real secrets or generated virtual keys. |
 | Deferred directories are not created unless approved. | Done | `apps\admin-web`, `services\admin-api`, and `services\llm-edge` remain absent. |
 | The repository can be checked out cleanly by another developer. | Done | Required Phase 1 directories contain tracked README or `.gitkeep` files. |
@@ -112,7 +127,7 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | P2-02 | Move LiteLLM runtime config source of truth. | Done | `services\litellm\config.yaml` exists, `services\litellm\Dockerfile` copies it, and former `config\litellm\config.yaml` is removed. | `services\litellm\Dockerfile`; `services\litellm\config.yaml` |
 | P2-03 | Create LiteLLM config validation script. | Done | `bash services/litellm/scripts/verify-config.sh` passed; script fails closed on missing Python/PyYAML and policy violations. | `services\litellm\scripts\verify-config.sh` |
 | P2-04 | Create model alias, provider denylist, and policy artifacts. | Done | Verifier confirms alias metadata matches runtime aliases and denylist rules are enforced. Opus review naming note was addressed by renaming wildcard-route metadata. | `config\litellm\model-aliases.yaml`; `config\litellm\provider-denylist.yaml`; `config\litellm\policy.md` |
-| P2-05 | Create deferred Cloudflare tunnel scaffold. | Done | Digest-pinned Dockerfile uses `TUNNEL_TOKEN` runtime env and no `--token` argument; example config contains placeholders only. | `services\cloudflared-tunnel\Dockerfile`; `services\cloudflared-tunnel\config.example.yml` |
+| P2-05 | Create deferred Cloudflare tunnel scaffold. | Done | Historical Phase 2 scaffold was created and reviewed, then removed from the current implementation path during Phase 8 planning cleanup after the no-Cloudflare-current-implementation decision. | `docs\operations\repository-structure.md` |
 | P2-06 | Create backup worker scaffold. | Done | Bash syntax validation passed; scripts fail closed on missing env, encrypt backup output, and do not upload unencrypted dumps. | `services\backup-worker\Dockerfile`; `services\backup-worker\scripts\backup-postgres.sh`; `services\backup-worker\scripts\restore-check.sh` |
 | P2-07 | Create smoke test skeletons. | Done | `python -m pytest tests\smoke -q` passed with 5 skipped by explicit env gates. | `tests\smoke\*.py`; `pytest.ini` |
 | P2-08 | Add required Phase 2 docs outputs. | Done | Provider config, local validation, model alias policy, fallback deferral, service docs, and repository structure docs are updated. | `docs\security\model-alias-policy.md`; `docs\operations\provider-config.md`; `docs\operations\local-config-validation.md`; `docs\decisions\phase-2-fallback-deferral.md` |
@@ -121,11 +136,11 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 
 | Exit criterion | Status | Evidence / blocker |
 | --- | --- | --- |
-| Local config parses. | Done | PyYAML parsed `services\litellm\config.yaml`, `config\litellm\model-aliases.yaml`, `config\litellm\provider-denylist.yaml`, and `services\cloudflared-tunnel\config.example.yml`. |
+| Local config parses. | Done | PyYAML parses `services\litellm\config.yaml`, `config\litellm\model-aliases.yaml`, and `config\litellm\provider-denylist.yaml`. |
 | All secrets are represented as environment references or placeholders. | Done | Verifier passed and targeted scans found no literal provider keys, database URLs, private keys, or concrete Railway/private hostnames in Phase 2 service/config/test artifacts. |
 | Required aliases exist. | Done | Verifier confirms all eight required aliases exist and alias metadata matches runtime aliases. |
 | `sensitive-code` and `sensitive-*` aliases are absent. | Done | Verifier blocks `sensitive-*`; scans show mentions only in policy/roadmap docs, not runtime config. |
-| Service scaffolds include README notes for deployment and security boundaries. | Done | LiteLLM, backup worker, and cloudflared READMEs document runtime source, deployment boundaries, and deferred gates. |
+| Service scaffolds include README notes for deployment and security boundaries. | Done | LiteLLM and backup-worker READMEs document runtime source, deployment boundaries, and deferred gates. |
 | No service exposes or assumes a public Railway domain for `litellm-proxy`. | Done | Targeted Phase 2 service/config/test scan found no `.up.railway.app` values outside historical Phase 0 docs/status. |
 | GPT and Opus implementation reviews are complete. | Done | GPT-5.5 approved as-is. Opus 4.8 approved with one non-blocking denylist clarity note, which was addressed before final validation. |
 
@@ -159,8 +174,8 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | P4-01 | Review Phase 4 plan with GPT and Opus before implementation. | Done | GPT-5.5 and Opus 4.8 reviewed the plan. Feedback was incorporated: no source attachment, no app deployment, private-network proof deferred to Phase 5 runtime validation, and root build context retained for current Dockerfiles. | Session `plan.md` |
 | P4-02 | Create durable Railway project and persistent staging environment. | Done | Project `dev-orbit-llm-gateway` (`0b1bc0ec-4ace-47c3-bd13-214256c27ad5`) exists in workspace `muthurema's Projects`; persistent `staging` environment (`f188f687-8582-4308-9110-1d082dc31b89`) exists. Default `production` environment remains unused. | `config\railway\staging.md` |
 | P4-03 | Provision managed Postgres for LiteLLM state. | Done | Managed Postgres service `Postgres` (`1494db55-53c1-4ff1-bbe0-312340190eb7`) is deployed in staging with latest deployment `9187450c-4db4-4c43-bb79-5f1bc3611ffc` in `SUCCESS`; one replica is running and volume `postgres-volume` is ready. Railway template kept service name `Postgres`, so variable references use `${{Postgres.DATABASE_URL}}`. | `config\railway\staging.md` |
-| P4-04 | Create sourceless app service shells. | Done | `litellm-proxy` (`335b0f28-2d4c-42b7-b3c9-063bcf296a25`), `backup-worker` (`f1e6e49c-8320-4b30-a070-d59d285f520c`), and `cloudflared-tunnel` (`ec0b7723-219f-4f54-8896-3ed010ed1e3d`) exist with no source, no deployments, and no public URLs. | `config\railway\staging.md`; `docs\runbooks\railway-project-service-setup.md` |
-| P4-05 | Configure safe staging variables and service references. | Done | `litellm-proxy` has non-secret staging flags and `DATABASE_URL=${{Postgres.DATABASE_URL}}`; `backup-worker` has `LITELLM_DATABASE_URL=${{Postgres.DATABASE_URL}}`; no provider keys, LiteLLM master key, Cloudflare token, backup credentials, production secrets, or generated developer keys were set. | `config\railway\staging.md` |
+| P4-04 | Create sourceless app service shells. | Done | `litellm-proxy` (`335b0f28-2d4c-42b7-b3c9-063bcf296a25`) and `backup-worker` (`f1e6e49c-8320-4b30-a070-d59d285f520c`) exist. Earlier `cloudflared-tunnel` shell `ec0b7723-219f-4f54-8896-3ed010ed1e3d` is out of current scope and requires explicit operator approval before deletion. | `config\railway\staging.md`; `docs\runbooks\railway-project-service-setup.md` |
+| P4-05 | Configure safe staging variables and service references. | Done | `litellm-proxy` has non-secret staging flags and `DATABASE_URL=${{Postgres.DATABASE_URL}}`; `backup-worker` has `LITELLM_DATABASE_URL=${{Postgres.DATABASE_URL}}`; no provider keys, LiteLLM master key, tunnel token, backup credentials, production secrets, or generated developer keys were set. | `config\railway\staging.md` |
 | P4-06 | Configure non-secret future deployment settings. | Done | App service shells have Dockerfile paths configured for future source attachment. `litellm-proxy` has healthcheck path `/health/readiness` and timeout `300`. Source remains unattached. | `config\railway\staging.md`; `docs\runbooks\staging-deployment.md` |
 | P4-07 | Add Phase 4 docs and runbooks. | Done | Staging config and runbooks document non-secret IDs, setup commands, shell-only boundary, safe variable references, public exposure closure, private-networking interpretation, and Phase 5 handoff. | `config\railway\staging.md`; `docs\runbooks\railway-project-service-setup.md`; `docs\runbooks\staging-deployment.md` |
 | P4-08 | Validate and review implementation. | Done | Railway readback confirms app shells are sourceless, undeployed, and domainless; Postgres is `SUCCESS`. Local gates passed. GPT-5.5 and Opus 4.8 reviewed with no material blockers; optional README status polish was applied. | This file |
@@ -172,7 +187,7 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | Durable Railway project exists separately from disposable Phase 0. | Done | Project `dev-orbit-llm-gateway` exists separately from Phase 0 project `internal-llm-gateway-phase0`. |
 | Persistent staging environment exists. | Done | Environment `staging` (`f188f687-8582-4308-9110-1d082dc31b89`) exists and is linked. |
 | Managed Postgres exists for LiteLLM state. | Done | `Postgres` service is deployed, `SUCCESS`, one replica running, volume ready. |
-| App service shells exist. | Done | `litellm-proxy`, `backup-worker`, and `cloudflared-tunnel` exist as sourceless shells. |
+| App service shells exist. | Done | `litellm-proxy` and `backup-worker` exist. The earlier `cloudflared-tunnel` sourceless shell is a blocked cleanup target requiring explicit operator approval before deletion. |
 | No app service is publicly exposed. | Done | Service readback shows no URL for app services; environment config shows zero service/custom domains for app services. |
 | No app service has source attached or deployment triggered. | Done | Service readback shows app service `source=null`, `deploymentId=null`, and `latestDeployment=null`. |
 | Private-network wiring is configured without public DB URLs. | Done with Phase 4 interpretation | App services reference `${{Postgres.DATABASE_URL}}`. Live app-to-DB proof is deferred to Phase 5 because app services intentionally do not run in Phase 4. |
@@ -208,13 +223,13 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 
 | ID | Roadmap item | Status | Evidence / blocker | Artifact |
 | --- | --- | --- | --- | --- |
-| P7-01 | Review Phase 7 plan with GPT and Opus before implementation. | Done | GPT-5.5 and Opus 4.8 reviewed the plan. Feedback incorporated: same-project Railway Object Storage is staging-only, backup-failure alerting needs push visibility, backup encryption-key escrow is required, daily/weekly/monthly logical retention must be explicit, native snapshot restore must be validated or documented, and RPO/RTO must be measured. | Session `plan.md` |
+| P7-01 | Review Phase 7 plan with GPT and Opus before implementation. | Done | GPT-5.5 and Opus 4.8 reviewed the plan. Feedback incorporated: same-project Railway Object Storage is staging-only, backup-failure alerting needs push visibility, backup encryption material must be escrowed, daily/weekly/monthly logical retention must be explicit, native snapshot restore must be validated or documented, and RPO/RTO must be measured. | Session `plan.md` |
 | P7-02 | Harden backup-worker logical backup and restore scripts. | Done | Scripts create compressed custom-format encrypted dumps, upload non-secret checksum manifests, emit metadata-only JSON logs, support backup tiers, and support restore into a fresh database through guarded `RESTORE_DATABASE_URL` plus `RESTORE_TARGET_CONFIRMED=fresh-restore-drill`. Local shell syntax, policy lint, secret scan without Gitleaks, smoke collection, and GPT/Opus review passed. | `services\backup-worker\scripts\backup-postgres.sh`; `services\backup-worker\scripts\restore-check.sh` |
 | P7-03 | Add Phase 7 backup, restore, alert, rotation, outage, rollback, and leakage runbooks. | Done | Required runbook files were added, the runbook index updated, revoked-key reconciliation documented, and local policy/secret/smoke validation passed. | `docs\runbooks\*.md` |
 | P7-04 | Create staging backup object-storage target. | Done | Railway Object Storage bucket `litellm-staging-backups` (`644dfb0b-9b67-4c46-aaf7-a416bf4db1af`) exists in staging region `sin`; object count is `8` after fresh-key validation and final daily-cron readback. backup-worker has rclone destination/config variables and uses `RCLONE_CONFIG_BACKUP_URL_STYLE=path`. Same-project storage remains staging-only; production remains blocked until external/cross-account storage or risk acceptance exists. | `docs\runbooks\off-platform-logical-backup-restore.md` |
 | P7-05 | Deploy scheduled backup-worker. | Done | backup-worker deployed successfully with a Postgres 18 `pg_dump` image and no public URL. After bucket credential rotation and a fresh operator-escrowed backup key, encrypted logical backups uploaded successfully, metadata-only logs were emitted, and cron was restored to `30 18 * * *`. Latest readback showed deployment `49768015-83e6-4fb9-80a9-049ceefc7c57` as `SUCCESS`, with no public URL and no running replica between cron invocations. | `services\backup-worker\README.md`; `services\backup-worker\Dockerfile` |
 | P7-06 | Configure Railway native Postgres backups. | Blocked | Requires Railway backup schedule/readback mutation or dashboard/API evidence. | `docs\runbooks\railway-backup-restore.md` |
-| P7-07 | Prove backup and restore drill. | In progress | Fresh-key logical backup validation passed: `backup_uploaded` logged artifact `litellm-postgres-20260606T171804Z-daily.dump.enc` with encrypted SHA-256 `f831b67877b303a60d42dbdd3e1a89a9dda3fba4428cec92eb74accece0615127` and encrypted size `241120` bytes; archive-list `restore_check_passed` logged against validation artifact `litellm-postgres-20260606T171903Z-daily.dump.enc`. Fresh restore-drill Postgres service and disposable LiteLLM restored-database validation are still required. | `docs\runbooks\off-platform-logical-backup-restore.md`; `docs\runbooks\litellm-postgres-outage.md` |
+| P7-07 | Prove backup and restore drill. | In progress | Fresh-key logical backup validation passed: `backup_uploaded` logged artifact `litellm-postgres-20260606T171804Z-daily.dump.enc` with encrypted SHA-256 `f831b67877b303a60d42dbdd3e1a89a9dda3fba4428cec92eb74accece0615127` and encrypted size `241120` bytes; archive-list `restore_check_passed` logged against validation artifact `litellm-postgres-20260606T171903Z-daily.dump.enc`. Fresh restore-drill Postgres service and disposable LiteLLM restored-database validation are deferred by staging exception and remain production blockers. | `docs\runbooks\off-platform-logical-backup-restore.md`; `docs\runbooks\litellm-postgres-outage.md`; `docs\decisions\phase-7-staging-risk-exception.md` |
 | P7-08 | Configure alerts and manual staging review cadence. | Blocked | Manual spend/error review is documented, but backup-failure push visibility still requires a dead-man success ping, Railway cron-failure notification, or equivalent sealed configuration. | `docs\runbooks\budget-spend-alert-response.md` |
 | P7-09 | Validate and review Phase 7 before marking done. | Blocked | Repository-side validation and GPT/Opus review passed. Railway readbacks, restore drill evidence, RPO/RTO measurement, and backup-failure alert evidence remain blocked until approved infrastructure mutations and sealed credentials exist. | This file |
 
@@ -223,12 +238,35 @@ Phase 1 should not start until the following are closed or explicitly risk-accep
 | Exit criterion | Status | Evidence / blocker |
 | --- | --- | --- |
 | Backup job succeeds in staging. | Done | Fresh operator-escrowed `BACKUP_ENCRYPTION_KEY` is set as a sealed backup-worker variable; encrypted backup upload succeeded with metadata-only logs and bucket object count `8`. Daily cron restored to `30 18 * * *`. |
-| Restore drill succeeds into a fresh staging database. | Blocked | Requires encrypted artifact, fresh restore-drill Postgres service, and restore execution. |
-| Restored database supports LiteLLM virtual-key auth. | Blocked | Requires disposable LiteLLM validation against restored database or a controlled maintenance-window repoint. |
+| Restore drill succeeds into a fresh staging database. | Blocked | Deferred by `docs\decisions\phase-7-staging-risk-exception.md` for Phase 8 staging only; production remains blocked until encrypted artifact restore, fresh restore-drill Postgres service, and restore execution are proven. |
+| Restored database supports LiteLLM virtual-key auth. | Blocked | Deferred by staging exception for Phase 8 only; production remains blocked until disposable LiteLLM validation against restored database or a controlled maintenance-window repoint is proven. |
 | Revoked-key reconciliation procedure is documented. | Done | Procedure is documented in `docs\runbooks\litellm-virtual-key-revocation.md`; concrete ledger location/evidence must still be recorded during the restore drill. |
-| RPO/RTO are documented. | Blocked | Requires measured restore drill and confirmed schedules. |
-| Budget/error/backup alerts are configured. | Blocked | Manual spend/error checks are documented; push-style backup-failure alert configuration remains pending. |
+| RPO/RTO are documented. | Blocked | Deferred by staging exception for Phase 8 only; production remains blocked until measured restore drill and confirmed schedules exist. |
+| Budget/error/backup alerts are configured. | Blocked | Manual spend/error checks are documented; push-style backup-failure alert configuration is deferred by staging exception and remains a production blocker. |
 | Production cutover/rollback runbook draft exists. | Done | `docs\runbooks\railway-deploy-rollback.md` exists as a draft; production-specific IDs/domains remain intentionally deferred until production exists. |
+
+## Phase 8 task tracker
+
+| ID | Roadmap item | Status | Evidence / blocker | Artifact |
+| --- | --- | --- | --- | --- |
+| P8-01 | Review Phase 8 plan with GPT-5.5 and Opus 4.8 before implementation. | Done | GPT-5.5 planning pass completed in-session; Opus 4.8 review completed on 2026-06-07 and guardrails were incorporated before implementation. | Session `plan.md` |
+| P8-02 | Record Phase 7 staging-only risk exception. | Done | Operator accepted moving remaining Phase 7 DR/alert blockers to a final pre-production gate for staging Phase 8 progress only. | `docs\decisions\phase-7-staging-risk-exception.md` |
+| P8-03 | Add staging proof-gate checklist. | Done | Checklist separates public-path evidence, needs-run checks, and staging-only deferred production blockers. | `docs\operations\staging-proof-gates.md` |
+| P8-04 | Add supported developer-tool setup guidance. | Done | Setup doc defines required capabilities, evidence template, and blocked-tool rules without marking named tools supported prematurely. | `docs\onboarding\supported-developer-tool-setup.md`; `docs\onboarding\supported-tools-matrix.md` |
+| P8-05 | Add production readiness review draft. | Done | Draft records no-Cloudflare current path, staging risk exceptions, and production blockers. | `docs\decisions\production-readiness-review.md` |
+| P8-06 | Run public staging smoke gates. | Blocked | Requires operator-provided staging public base URL and disposable LiteLLM virtual key. No new key creation is approved. | `docs\operations\staging-proof-gates.md`; `scripts\phase6-validate-public-origin.ps1` |
+| P8-07 | Validate named developer tools. | Blocked | Requires live Continue.dev, Cline/Roo-style, Aider/equivalent, OpenAI SDK, or Copilot CLI BYOK-compatible runs. Raw HTTP validation script is the only supported baseline so far. | `docs\onboarding\supported-developer-tool-setup.md`; `docs\onboarding\supported-tools-matrix.md` |
+| P8-08 | Final Phase 8 review and status update. | In progress | Repository-side Phase 8 artifacts validated: public-origin validator `-ValidateOnly`, LiteLLM/config lint, secret scanning with Gitleaks, smoke collection, and smoke tests passed locally. Phase 8 cannot be fully Done until mandatory runtime gates are passed or separately accepted with production-grade exceptions. | This file |
+
+## Phase 8 exit criteria tracker
+
+| Exit criterion | Status | Evidence / blocker |
+| --- | --- | --- |
+| All mandatory smoke tests pass. | In progress | Several public-path checks were previously validated in Phase 6. Budget, fallback, no-downgrade, cache-off runtime proof, log sentinel, provider rotation, restore drill, restored auth, RPO/RTO, and backup-failure push alerting are not fully passed. |
+| At least one primary developer tool works end-to-end with LiteLLM-native auth. | Blocked | Raw HTTP validation script works, but named developer tools remain untested. |
+| Blocked tools are documented and excluded from launch. | In progress | Blocked-tool rules are documented; concrete tool statuses require live validation. |
+| Risk exceptions have owner, expiry, budget limits, rate limits, and monitoring. | Done | Phase 7 staging risk exception records owner, scope, expiry/review, budget/rate-limit constraints, monitoring, and production gate. |
+| Product approval gates are ready for production creation. | Blocked | Production remains blocked by deferred Phase 7 DR/alerting items and incomplete named tool validation. |
 
 ## Latest Phase 0 technical validation
 

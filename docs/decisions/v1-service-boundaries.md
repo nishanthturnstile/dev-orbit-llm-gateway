@@ -11,7 +11,6 @@
 | `litellm-proxy` | Railway app service running LiteLLM Proxy OSS and built-in Admin UI | Included in v1. Existing Dockerfile is a Phase 0 proof artifact; Phase 2 owns hardened config/scaffold work. |
 | `litellm-postgres` | Railway managed Postgres | Included in v1 as platform-managed state for LiteLLM users, teams, virtual keys, budgets, and spend. Not represented as a repo service directory. |
 | `backup-worker` | Future scheduled app service | Required before production for off-platform logical backups, but code and scripts are deferred to later phases. |
-| `cloudflared-tunnel` | Optional hardening service | Deferred unless public-origin risk, SSO, WAF, or origin-guard requirements justify it. |
 | `litellm-redis` | Railway managed Redis | Deferred unless multiple LiteLLM replicas, distributed rate limiting, or shared cache state are required. |
 
 ## Explicitly deferred
@@ -21,6 +20,7 @@ Do not create these components without a later approved design decision:
 - `apps\admin-web`
 - `services\admin-api`
 - `services\llm-edge`
+- Cloudflare Tunnel/Access/WAF or edge-origin services
 - A custom admin database
 - A custom LLM router
 - Redis-backed multi-replica LiteLLM deployment
