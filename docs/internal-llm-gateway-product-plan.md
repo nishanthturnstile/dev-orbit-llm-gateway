@@ -20,7 +20,7 @@ The plan is intentionally LiteLLM-first:
 - LiteLLM built-in Admin UI is the v1 admin surface for virtual keys, teams, users, budgets, spend, model aliases, and admin operations.
 - Railway is the production platform for the gateway services and managed Postgres.
 - LiteLLM native authentication is the public ingress/authentication model for the Phase 0 proof and MVP.
-- Cloudflare Tunnel, Cloudflare Access, WAF, or an edge origin guard are deferred hardening options if public-origin risk becomes unacceptable.
+- Cloudflare Tunnel, Cloudflare Access, WAF, and edge-origin services are not part of the current implementation path.
 - Custom admin portal, custom admin API, and admin database are deferred.
 - Railway managed Redis is deferred until multiple LiteLLM replicas, distributed rate limiting, or shared response/cache state are required.
 
@@ -32,7 +32,7 @@ The v1 product must:
 
 - Provide one stable internal LLM API endpoint for supported developer tools.
 - Support OpenAI-compatible API calls for chat completions, embeddings, model listing, and streaming where required.
-- Keep provider keys, LiteLLM master key, database URLs, optional Cloudflare secrets, and backup credentials out of browser/client code.
+- Keep provider keys, LiteLLM master key, database URLs, edge-service secrets, and backup credentials out of browser/client code.
 - Give each developer a separate LiteLLM virtual key.
 - Enforce model aliases, provider access, same-tier fallback rules, and per-key budgets.
 - Give admins/leads a protected UI for users, teams, keys, budgets, spend, aliases, and model operations.
@@ -74,7 +74,7 @@ The v1 product must:
 - Custom admin portal.
 - Custom admin API.
 - Admin database.
-- Cloudflare Tunnel, Cloudflare Access, WAF, or `llm-edge` / Envoy origin guard unless public-origin risk or production requirements justify them.
+- Cloudflare Tunnel, Cloudflare Access, WAF, or `llm-edge` / Envoy origin guard unless a later design decision explicitly reintroduces them.
 - Railway Redis, unless multiple LiteLLM replicas, distributed rate limiting, or shared cache state are required.
 - Monitoring service beyond Railway/LiteLLM basics, unless the baseline is not enough.
 
@@ -139,7 +139,7 @@ Use repo docs/wiki and GitHub Issues or Slack workflow for v1 onboarding and key
 
 The approved Phase 0/MVP direction is a public Railway/custom domain for `litellm-proxy`, protected primarily by LiteLLM-native authentication, budgets, rate limits, RBAC, and metadata-only logging.
 
-This is simpler than Cloudflare Tunnel + Access and works for a small internal gateway proof, but it is a weaker security posture because a leaked virtual key can be used from the public internet. The design requires explicit risk acceptance and these compensating controls:
+This is simple enough for a small internal gateway proof, but it is a weaker security posture because a leaked virtual key can be used from the public internet. The design requires explicit risk acceptance and these compensating controls:
 
 - Per-developer LiteLLM virtual keys; no shared production developer key.
 - Strict per-key daily/monthly budgets, rate limits, and model alias restrictions.
@@ -150,7 +150,7 @@ This is simpler than Cloudflare Tunnel + Access and works for a small internal g
 - Alerts for spend spikes, 401/403 spikes, provider errors, and gateway 5xx.
 - Key distribution, revocation, and rotation runbooks.
 - Streaming/SSE support.
-- Cloudflare Tunnel/Access/WAF can be added later as a hardening layer if public-origin risk is not acceptable.
+- If public-origin risk is not acceptable, stop before production and approve a separate hardening design.
 
 ### 5.5 Developer-tool compatibility is a launch blocker
 
@@ -185,14 +185,14 @@ No custom `admin-api` is part of v1. If a future phase introduces one, it must h
 A future `admin-api` must:
 
 - Validate any upstream identity token signature, issuer, audience, expiry, and issued-at.
-- If Cloudflare Access is added later, require and validate `Cf-Access-Jwt-Assertion`; do not trust `Cf-Access-Authenticated-User-Email` alone.
+- If an identity-aware edge layer is added later, require and validate signed identity assertions; do not trust forwarded identity headers alone.
 - Map roles from verified identity claims only after token validation.
 - Reject missing or invalid JWTs even if requests come through Railway private networking.
 - Return clean `401/403` errors without stack traces or private details.
 
 ### 5.7 Secrets stay server-side
 
-Provider keys, LiteLLM master key, Cloudflare secrets, database URLs, optional Redis URLs, backup credentials, and generated virtual keys must stay out of browser/client code and source control.
+Provider keys, LiteLLM master key, edge-service secrets, database URLs, optional Redis URLs, backup credentials, and generated virtual keys must stay out of browser/client code and source control.
 
 Do not commit:
 
@@ -200,7 +200,7 @@ Do not commit:
 - real Railway variables
 - provider keys
 - LiteLLM master key
-- Cloudflare Access token secrets
+- Edge access token secrets
 - database URLs
 - Redis URLs
 - backup bucket credentials
@@ -213,7 +213,7 @@ Railway volume backups are useful but not enough because they restore only withi
 Use both:
 
 - Railway native volume backups for LiteLLM Postgres: daily, weekly, and monthly schedules.
-- Logical `pg_dump` backups from `backup-worker` to Cloudflare R2, S3, or Backblaze B2 with encryption, versioning, and restricted credentials.
+- Logical `pg_dump` backups from `backup-worker` to an approved S3-compatible backup target such as R2, S3, or Backblaze B2 with encryption, versioning, and restricted credentials.
 
 Suggested initial RPO/RTO:
 
@@ -271,10 +271,9 @@ The key request process should capture:
 
 ## 7. Notes and risks
 
-- Railway is viable for regular internal production, but the design depends on Cloudflare Tunnel + Cloudflare Access working with real developer tools.
-- If developer tools cannot use Access headers or a wrapper, the supported-tool list must be narrowed.
+- Railway is viable for regular internal production, but the design depends on developer tools supporting a custom OpenAI-compatible base URL, LiteLLM virtual-key authorization headers, and streaming where required.
 - A public LiteLLM-native-auth endpoint is operationally simple but weaker than an identity-aware edge gate. It is the selected MVP path only with documented risk acceptance, strict budgets, rate limits, monitoring, and admin controls.
-- Cloudflare Tunnel/Access/WAF remains a future hardening option if public-origin risk is not acceptable.
+- If public-origin risk is not acceptable, production must wait for a separately approved hardening design.
 - Railway-native backups alone are not enough for disaster recovery; keep off-platform logical backups.
 - LiteLLM upgrades can include DB migrations; pin images and soak in staging.
 - If uptime becomes business-critical, move to two LiteLLM replicas and add Redis after validating shared state, deploy behavior, and routing under load.

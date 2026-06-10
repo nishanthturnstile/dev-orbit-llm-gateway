@@ -1,0 +1,29 @@
+# Placeholder-only LibreChat config baked into the staging wrapper image.
+# Runtime secrets and endpoint URLs are provided by Railway variables.
+
+version: 1.3.12
+cache: true
+
+endpoints:
+  custom:
+    - name: "LiteLLM Staging"
+      apiKey: "${LITELLM_UI_API_KEY}"
+      baseURL: "${LITELLM_BASE_URL}"
+      models:
+        default:
+          - "dev-fast"
+          - "dev-code"
+          - "dev-reasoning"
+          - "dev-long-horizon"
+      titleConvo: true
+      titleModel: "dev-fast"
+      summarize: true
+      summaryModel: "dev-fast"
+
+interface:
+  endpointsMenu: true
+  modelSelect: true
+  parameters: false
+
+registration:
+  socialLogins: []

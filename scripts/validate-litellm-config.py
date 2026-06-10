@@ -19,17 +19,6 @@ except ImportError:
     sys.exit(2)
 
 
-REQUIRED_ALIASES = {
-    "dev-fast",
-    "dev-code",
-    "dev-reasoning",
-    "dev-long-context",
-    "batch-analysis",
-    "dev-search",
-    "dev-embed",
-    "dev-vision",
-}
-
 SECRET_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_-]{16,}"),
     re.compile(r"postgres(?:ql)?://[^<\s]+", re.IGNORECASE),
@@ -75,19 +64,27 @@ def validate(root: Path) -> None:
     if not isinstance(models, list):
         raise SystemExit("services/litellm/config.yaml must contain a model_list array")
 
-    runtime_aliases = {model.get("model_name") for model in models if isinstance(model, dict)}
-    missing = REQUIRED_ALIASES - runtime_aliases
-    unexpected = runtime_aliases - REQUIRED_ALIASES
-    if missing:
-        raise SystemExit(f"Missing required aliases: {', '.join(sorted(missing))}")
-    if unexpected:
-        raise SystemExit(f"Unexpected aliases in runtime config: {', '.join(sorted(unexpected))}")
+    runtime_alias_names = [
+        model.get("model_name")
+        for model in models
+        if isinstance(model, dict) and model.get("model_name")
+    ]
+    runtime_aliases = set(runtime_alias_names)
+    if len(runtime_alias_names) != len(runtime_aliases):
+        raise SystemExit("services/litellm/config.yaml contains duplicate model aliases")
 
-    policy_aliases = {
+    alias_items = alias_doc.get("aliases", [])
+    if not isinstance(alias_items, list) or not alias_items:
+        raise SystemExit("model-aliases.yaml must define at least one alias")
+
+    policy_alias_names = [
         item["name"]
-        for item in alias_doc.get("aliases", [])
+        for item in alias_items
         if isinstance(item, dict) and item.get("name")
-    }
+    ]
+    policy_aliases = set(policy_alias_names)
+    if len(policy_alias_names) != len(policy_aliases):
+        raise SystemExit("model-aliases.yaml contains duplicate aliases")
     if policy_aliases != runtime_aliases:
         raise SystemExit("model-aliases.yaml alias names must match services/litellm/config.yaml")
 
@@ -152,6 +149,8 @@ def validate(root: Path) -> None:
         raise SystemExit("general_settings.master_key must be os.environ/LITELLM_MASTER_KEY")
     if general.get("database_url") != "os.environ/DATABASE_URL":
         raise SystemExit("general_settings.database_url must be os.environ/DATABASE_URL")
+    if general.get("health_check_details") is not False:
+        raise SystemExit("general_settings.health_check_details must be false")
 
     settings = runtime.get("litellm_settings", {})
     if settings.get("turn_off_message_logging") is not True:

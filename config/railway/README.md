@@ -1,10 +1,10 @@
 # Railway configuration notes
 
-This directory is the documentation home for future Railway environment setup.
+This directory is the documentation home for Railway environment setup.
 
-Phase 1 does not create or mutate Railway projects, services, variables, domains, databases, buckets, or deployments.
+Phase 4 created durable staging shells in Railway. See `staging.md` for non-secret names, IDs, service boundaries, and variable-reference shapes.
 
-Later phases should document:
+This directory may document:
 
 - Project and environment names.
 - Service boundaries.
@@ -13,5 +13,6 @@ Later phases should document:
 - Dockerfile or config-as-code paths.
 - Deployment health check path, expected to be `/health/readiness` for LiteLLM.
 - Staging and production differences.
+- Staging-to-production promotion rules that move source-controlled config/code without copying secrets or data.
 
 Do not store Railway variable values, tokens, database URLs, private hostnames, generated virtual keys, or provider keys here.

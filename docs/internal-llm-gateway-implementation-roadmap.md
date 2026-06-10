@@ -1,6 +1,6 @@
 # Internal LLM Gateway implementation roadmap
 
-**Status:** Phase 0 in progress - Railway/LiteLLM proof deployed; final provider-backed chat and streaming blocked by OpenAI credits  
+**Status:** Phase 5 blocked - LiteLLM staging deployment and runtime policy validation passed except `dev-search`, which reaches Perplexity but fails with the staged provider key
 **Date:** 2026-06-05  
 **Product:** Internal LLM Gateway  
 **Production target:** Railway  
@@ -11,7 +11,7 @@
 
 This roadmap is the implementation source of truth for building the Internal LLM Gateway from scratch in a phase-wise manner.
 
-The roadmap translates the approved product plan and architecture into an execution sequence. It starts with launch-blocking validation, then creates the repository structure, service scaffolding, policy/config, CI gates, Railway staging, LiteLLM deployment, Cloudflare ingress, backups, staging proof gates, production pilot, and post-pilot hardening.
+The roadmap translates the approved product plan and architecture into an execution sequence. It starts with launch-blocking validation, then creates the repository structure, service scaffolding, policy/config, CI gates, Railway staging, LiteLLM deployment, public-origin access validation, backups, staging proof gates, production pilot, and post-pilot hardening.
 
 This document owns:
 
@@ -32,10 +32,10 @@ The product plan owns product goals, scope, user surfaces, and product decisions
 - Keep LiteLLM as the gateway policy source of truth.
 - Use LiteLLM-native authentication as the Phase 0/MVP public ingress control.
 - Allow a public Railway/custom domain for `litellm-proxy` only after LiteLLM virtual-key auth, admin controls, budgets, rate limits, metadata-only logging, and secret handling are configured.
-- Treat Cloudflare Tunnel, Cloudflare Access, WAF, or an edge origin guard as future hardening options.
+- Keep Cloudflare Tunnel, Cloudflare Access, WAF, and edge-origin services out of the current implementation path unless a later design decision explicitly reintroduces them.
 - Keep custom admin portal/API/database out of v1.
 - Keep Redis and multiple LiteLLM replicas deferred until uptime/scale/shared-state needs justify them.
-- Keep provider keys, LiteLLM keys, database URLs, Cloudflare secrets, and backup credentials out of source control and browser/client code.
+- Keep provider keys, LiteLLM keys, database URLs, edge-service secrets, and backup credentials out of source control and browser/client code.
 - Do not advance to production until staging proof gates pass.
 - Do not delete or replace the current repository until the approval gates in the product plan pass.
 
@@ -49,11 +49,11 @@ The product plan owns product goals, scope, user surfaces, and product decisions
 | 3 | CI/CD, secret scanning, and policy gates | Make unsafe secrets/config/images fail before deployment. |
 | 4 | Durable Railway staging provisioning | Create repeatable staging Railway services, variables, and private networking. |
 | 5 | LiteLLM deployment and runtime policy validation | Deploy public-origin LiteLLM in staging and validate native auth, aliases, budgets, rate limits, health, logging, and provider routing. |
-| 6 | Public-origin hardening and access validation | Validate public Railway/custom-domain exposure, admin controls, auth-failure handling, and optional Cloudflare/edge hardening decisions. |
+| 6 | Public-origin hardening and access validation | Validate public Railway/custom-domain exposure, admin controls, auth-failure handling, and LiteLLM-native public-origin controls. |
 | 7 | Backups, restore, alerts, and runbooks | Make state recoverable and operational failures visible before production. |
 | 8 | Staging proof gates and client compatibility | Prove end-to-end behavior, smoke tests, and supported developer tools. |
 | 9 | Production deployment, cutover, and pilot | Promote proven artifacts to production and run a controlled pilot. |
-| 10 | Post-pilot hardening and deferred capabilities | Decide whether to add Redis, multiple replicas, monitoring extensions, custom admin, or edge fallback. |
+| 10 | Post-pilot hardening and deferred capabilities | Decide whether to add Redis, multiple replicas, monitoring extensions, custom admin, or separately approved edge hardening. |
 
 ### Execution tracking
 
@@ -152,10 +152,6 @@ Create the clean repository foundation for the MVP with service boundaries, docu
 |   |   |-- scripts
 |   |   |   `-- verify-config.sh
 |   |   `-- README.md
-|   |-- cloudflared-tunnel
-|   |   |-- Dockerfile
-|   |   |-- config.example.yml
-|   |   `-- README.md
 |   `-- backup-worker
 |       |-- Dockerfile
 |       |-- scripts
@@ -167,8 +163,6 @@ Create the clean repository foundation for the MVP with service boundaries, docu
 |   |   |-- model-aliases.yaml
 |   |   |-- provider-denylist.yaml
 |   |   `-- policy.md
-|   |-- cloudflare
-|   |   `-- README.md
 |   `-- railway
 |       |-- README.md
 |       |-- staging.md
@@ -184,7 +178,6 @@ Create the clean repository foundation for the MVP with service boundaries, docu
 |   |   |-- test_chat_completion.py
 |   |   |-- test_streaming.py
 |   |   |-- test_budget_block.py
-|   |   |-- test_cloudflare_block.py
 |   |   `-- test_no_prompt_log_leak.py
 |   `-- fixtures
 |-- docs
@@ -224,12 +217,13 @@ Create the clean repository foundation for the MVP with service boundaries, docu
 
 ### Exit criteria
 
-- The repo documents Railway + Cloudflare Tunnel + LiteLLM architecture, service boundaries, and deferred components.
+- The repo documents Railway + LiteLLM architecture, service boundaries, and deferred components.
 - No real secrets or generated credentials are present.
 - Deferred directories are not created unless approved:
     - `apps\admin-web`
     - `services\admin-api`
     - `services\llm-edge`
+    - Cloudflare tunnel/access/edge services
 - The repository can be checked out cleanly by another developer.
 
 ### Runbook/docs outputs
@@ -255,8 +249,6 @@ This phase owns local artifact creation. Later phases validate and deploy these 
 - Create `services\litellm\Dockerfile` from a pinned LiteLLM database-capable image digest.
 - Create `services\litellm\config.yaml` using environment references for secrets.
 - Create `services\litellm\scripts\verify-config.sh`.
-- Create `services\cloudflared-tunnel\Dockerfile` from a pinned `cloudflared` image or approved install method.
-- Create `services\cloudflared-tunnel\config.example.yml`.
 - Create `services\backup-worker\Dockerfile`.
 - Create backup and restore-check scripts.
 - Create `config\litellm\model-aliases.yaml`.
@@ -271,11 +263,14 @@ Define these initial aliases:
 - `dev-fast`
 - `dev-code`
 - `dev-reasoning`
-- `dev-long-context`
-- `batch-analysis`
+- `dev-long-horizon`
 - `dev-search`
 - `dev-embed`
 - `dev-vision`
+- `premium-code`
+- `premium-planning`
+- `ultra-premium-code`
+- `ultra-premium-planning`
 
 Do not define `sensitive-code`.
 
@@ -294,7 +289,6 @@ Policy/config requirements:
 ### Deliverables
 
 - LiteLLM Dockerfile and config.
-- Cloudflared service scaffold.
 - Backup worker scaffold.
 - Model alias config.
 - Provider denylist config.
@@ -397,7 +391,6 @@ This phase creates real staging. It is separate from the disposable Phase 0 proo
 - Add managed Postgres for LiteLLM.
 - Add app services:
     - `litellm-proxy`
-    - `cloudflared-tunnel`
     - `backup-worker`
 - Confirm Postgres variables generated by Railway.
 - Prefer private/internal connection variables.
@@ -436,7 +429,7 @@ This phase creates real staging. It is separate from the disposable Phase 0 proo
 
 ### Goal
 
-Deploy public-origin LiteLLM in staging and prove that native-auth runtime behavior matches the policy/config authored earlier.
+Deploy LiteLLM in staging and prove that native-auth runtime behavior matches the policy/config authored earlier. Durable public-origin exposure is deferred to Phase 6.
 
 This phase owns deployment and runtime validation. It does not redefine aliases or policy outside the committed config artifacts.
 
@@ -448,10 +441,11 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
 
 ### Scope
 
-- Deploy `litellm-proxy` to Railway staging.
-- Set `DATABASE_URL` from `litellm-postgres` private/internal connection values.
-- Set provider keys as sealed Railway variables.
+- Deploy `litellm-proxy` to Railway staging without a durable public URL.
+- Set `DATABASE_URL` from the actual Railway Postgres service reference `${{Postgres.DATABASE_URL}}`.
+- Set approved provider keys as sealed Railway variables.
 - Set `LITELLM_MASTER_KEY` as sealed Railway variable starting with `sk-`.
+- Set `LITELLM_SALT_KEY` as sealed Railway variable before first boot while `store_model_in_db: true` remains enabled.
 - Set `PORT=4000` or start command compatible with Railway's injected `PORT`.
 - Validate `/health/readiness`.
 - Confirm `/health` deep provider probe is not used for Railway deployment healthcheck.
@@ -459,23 +453,26 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
     - `dev-fast`
     - `dev-code`
     - `dev-reasoning`
-    - `dev-long-context`
-    - `batch-analysis`
-    - `dev-search`
+    - `dev-long-horizon`
+    - `dev-search` remains present but runtime validation is blocked until a valid approved `PERPLEXITY_API_KEY` is sealed and loaded.
     - `dev-embed`
     - `dev-vision`
+    - `premium-code`
+    - `premium-planning`
+    - `ultra-premium-code`
+    - `ultra-premium-planning`
 - Validate `sensitive-code` is absent.
 - Validate same-tier fallbacks only.
 - Validate retries and timeouts.
 - Validate metadata-only logging.
 - Validate response cache remains default-off for code prompts.
-- Validate LiteLLM Admin UI works for approved admins/leads through the protected path once Cloudflare is configured.
+- Keep LiteLLM Admin UI disabled in Phase 5 and validate admin/control APIs through approved operator-context API calls.
 
 ### Deliverables
 
 - Staging LiteLLM deployment.
 - Staging LiteLLM config validation output.
-- Initial admin/lead setup notes.
+- Admin UI disabled posture notes.
 - Initial virtual-key creation procedure.
 - Runtime policy validation notes.
 
@@ -483,10 +480,10 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
 
 - LiteLLM starts in staging.
 - Readiness healthcheck passes.
-- Direct public access to `litellm-proxy` is impossible.
+- No durable public URL remains for `litellm-proxy`.
 - LiteLLM persists users, virtual keys, teams, budgets, and spend to Postgres.
 - Model aliases route to approved providers only.
-- Over-budget behavior can be tested with a controlled test key.
+- Budget/spend/revocation behavior is validated with controlled disposable keys under the approved Phase 5 validation spend cap.
 - Logs do not contain known prompt/response sentinel strings.
 
 ### Runbook/docs outputs
@@ -499,7 +496,7 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
 
 ### Goal
 
-Make the public LLM API and admin UI safe enough for MVP use with LiteLLM-native authentication, documented residual risk, and optional Cloudflare/edge hardening decisions.
+Make the public LLM API and admin UI safe enough for MVP use with LiteLLM-native authentication and documented residual risk.
 
 ### Dependencies
 
@@ -524,7 +521,7 @@ Make the public LLM API and admin UI safe enough for MVP use with LiteLLM-native
 - Preserve LiteLLM virtual-key `Authorization` behavior.
 - Support streaming/SSE end-to-end.
 - Configure alerts for 401/403 spikes, spend spikes, provider errors, and gateway 5xx.
-- Decide whether Cloudflare Tunnel/Access/WAF or an edge origin guard is required before production.
+- Record that Cloudflare Tunnel/Access/WAF and edge-origin services are out of the current implementation path unless a later design decision explicitly reintroduces them.
 
 ### Deliverables
 
@@ -533,7 +530,7 @@ Make the public LLM API and admin UI safe enough for MVP use with LiteLLM-native
 - Public-origin risk acceptance record.
 - Native-auth and admin-control validation notes.
 - Auth-failure/spend/provider/gateway alert plan.
-- Optional Cloudflare/edge hardening decision record.
+- No-Cloudflare-current-implementation decision record.
 
 ### Exit criteria
 
@@ -550,7 +547,6 @@ Make the public LLM API and admin UI safe enough for MVP use with LiteLLM-native
 - `docs\decisions\public-origin-risk-acceptance.md`
 - `docs\security\litellm-native-auth-policy.md`
 - `docs\onboarding\supported-tools-matrix.md` update
-- Optional `docs\runbooks\cloudflare-tunnel-access-setup.md` only if Cloudflare hardening is reintroduced
 
 ## 11. Phase 7 - Backups, restore, alerts, and runbooks
 
@@ -562,7 +558,7 @@ Make production state recoverable and operational failures visible before real u
 
 - Phase 4 staging Postgres exists.
 - Phase 5 LiteLLM stores state in Postgres.
-- Phase 6 Cloudflare path is configured enough for health and availability checks.
+- Phase 6 public LiteLLM-native path is configured enough for health and availability checks.
 
 ### Scope
 
@@ -581,7 +577,6 @@ Make production state recoverable and operational failures visible before real u
     - reconcile revoked keys after restore
 - Add key rotation runbooks:
     - provider keys
-    - optional Cloudflare/edge service tokens, only if that hardening layer is introduced
     - LiteLLM master/admin credential
     - developer virtual keys
 - Add outage runbooks:
@@ -589,13 +584,11 @@ Make production state recoverable and operational failures visible before real u
     - Postgres outage
     - Railway deploy rollback
     - bad LiteLLM config rollback
-    - optional Cloudflare/edge outage, only if that hardening layer is introduced
 - Add alerts:
     - company budget threshold
     - per-key spend spike
     - provider error rate
     - LiteLLM 5xx/error rate
-    - optional Cloudflare/edge degraded/down, only if that hardening layer is introduced
     - backup failure
 
 ### Deliverables
@@ -615,7 +608,7 @@ Make production state recoverable and operational failures visible before real u
 - Restored database supports LiteLLM virtual-key auth.
 - Revoked-key reconciliation procedure is documented.
 - RPO/RTO are documented.
-- Budget/error/backup alerts are configured; optional Cloudflare/edge alerts are configured only if that hardening layer exists.
+- Budget/error/backup alerts are configured.
 - Production cutover/rollback runbook draft exists.
 
 ### Runbook/docs outputs
@@ -625,7 +618,6 @@ Make production state recoverable and operational failures visible before real u
 - `docs\runbooks\provider-key-rotation.md`
 - `docs\runbooks\budget-spend-alert-response.md`
 - `docs\runbooks\litellm-postgres-outage.md`
-- Optional `docs\runbooks\cloudflare-edge-outage.md`, only if that hardening layer exists.
 - `docs\runbooks\provider-outage-same-tier-fallback.md`
 - `docs\runbooks\railway-deploy-rollback.md`
 - `docs\runbooks\prompt-log-leakage-investigation.md`
@@ -634,7 +626,7 @@ Make production state recoverable and operational failures visible before real u
 
 ### Goal
 
-Prove Railway + LiteLLM behavior in staging before production exists, plus optional Cloudflare/edge behavior only if that hardening layer is introduced.
+Prove Railway + LiteLLM behavior in staging before production exists using the LiteLLM-native public Railway/custom endpoint.
 
 ### Dependencies
 
@@ -655,14 +647,13 @@ Prove Railway + LiteLLM behavior in staging before production exists, plus optio
 - Per-key daily/monthly budget windows block over-budget requests.
 - Same-tier fallback works for a controlled simulated provider failure.
 - No fallback silently downgrades premium aliases to weaker tiers.
-- Streaming SSE works through the public/custom LiteLLM endpoint; if Cloudflare/edge hardening exists, streaming also works through that layer.
+- Streaming SSE works through the public/custom LiteLLM endpoint.
 - Response cache remains off for code prompts unless explicitly requested and policy-allowed.
 - Railway logs do not contain known prompt/response sentinel strings.
 - LiteLLM Admin UI is not accessible to developer API service-token users.
 - Backup worker creates off-platform logical backups.
 - Restore drill works into a fresh staging database.
 - Provider key rotation runbook works for one provider.
-- Optional Cloudflare/edge token rotation runbook works, only if that hardening layer exists.
 
 ### Client compatibility matrix
 
@@ -685,9 +676,9 @@ Prove Railway + LiteLLM behavior in staging before production exists, plus optio
 ### Exit criteria
 
 - All mandatory smoke tests pass.
-- At least one primary developer tool works end-to-end with the required Cloudflare + LiteLLM auth path.
+- At least one primary developer tool works end-to-end with the required LiteLLM-native auth path.
 - Blocked tools are documented and excluded from launch.
-- Risk exceptions, if any, have owner, expiry, budget limits, WAF/rate limits, and monitoring.
+- Risk exceptions, if any, have owner, expiry, budget limits, rate limits, and monitoring.
 - Product approval gates are ready for production creation.
 
 ### Runbook/docs outputs
@@ -706,7 +697,7 @@ Promote the proven staging stack to production and operate a small controlled pi
 
 - Phase 8 staging proof gates pass.
 - Production secrets and provider accounts are approved.
-- Production Cloudflare hostnames and Access policies are approved.
+- Production public/custom domains and LiteLLM-native access controls are approved.
 - Production cutover/rollback runbook is ready.
 
 ### Scope
@@ -714,7 +705,7 @@ Promote the proven staging stack to production and operate a small controlled pi
 - Create `production` Railway environment only after staging proof gates pass.
 - Create production Railway variables from approved secret store/operator input.
 - Deploy pinned artifacts/images to production.
-- Configure production Cloudflare Tunnel, Access policies, service tokens, and domains.
+- Configure production Railway/custom domains and LiteLLM-native access controls.
 - Confirm no unused/default public Railway domains exist.
 - Enable backups and backup worker.
 - Run production smoke tests with low-cost model/provider calls.
@@ -731,14 +722,14 @@ Promote the proven staging stack to production and operate a small controlled pi
 - Monitor spend, errors, latency, provider failures, cache behavior, and budget hits.
 - Review Railway CPU/memory/network/disk metrics.
 - Review LiteLLM spend/user/team metadata.
-- Review Cloudflare Access logs for denied/bypassed attempts.
+- Review LiteLLM auth-failure, spend, provider-error, and gateway-error signals.
 - Tune aliases and budgets based on real usage.
 
 ### Deliverables
 
 - Production Railway environment.
 - Production LiteLLM deployment.
-- Production Cloudflare Tunnel and Access setup.
+- Production public/custom domain and LiteLLM-native access setup.
 - Production backup and alert setup.
 - Initial admin/lead users.
 - Initial pilot developer virtual keys.
@@ -748,15 +739,15 @@ Promote the proven staging stack to production and operate a small controlled pi
 
 ### Exit criteria
 
-- Production endpoint works through Cloudflare only.
-- LiteLLM Admin UI works through Cloudflare only.
+- Production endpoint requires valid LiteLLM-native authentication.
+- LiteLLM Admin UI is available only to approved admins/leads through configured LiteLLM-native controls.
 - Initial users can make approved requests.
 - Budgets and model restrictions are enforced.
 - Backups are running.
 - Restore path has been tested in staging and documented for production.
 - Pilot users can use the gateway day-to-day for approved non-sensitive work.
 - Production cutover/rollback process is documented.
-- No direct public Railway origin exists for `litellm-proxy`.
+- Any public Railway/custom origin for `litellm-proxy` is protected by LiteLLM-native authentication, admin controls, budgets, rate limits, and metadata-only logging.
 
 ### Runbook/docs outputs
 
@@ -786,7 +777,7 @@ Use pilot evidence to decide whether to add hardening, scale, observability, or 
     - external monitoring/alerting service
     - OpenTelemetry/Langfuse/SigNoz/Grafana stack
     - custom admin portal/API
-    - Envoy/`llm-edge` fallback
+    - separately approved edge hardening
     - additional providers
     - additional supported tools
 - Revisit RPO/RTO and backup cadence.
@@ -821,7 +812,7 @@ Only consider a custom admin product if there is clear evidence that v1 cannot h
 - Sanitized developer-only spend views.
 - Access review or approval audits.
 
-Any future custom admin API must validate Cloudflare JWTs itself and must not trust `Cf-Access-Authenticated-User-Email` alone.
+Any future custom admin API must authenticate independently and must not trust forwarded identity headers alone.
 
 ### Deliverables
 

@@ -11,7 +11,7 @@
 
 This document is the technical source of truth for the Internal LLM Gateway architecture, service topology, technology choices, configuration boundaries, and implementation rules.
 
-The system is a Railway-hosted, LiteLLM-first internal gateway. LiteLLM native authentication provides the Phase 0/MVP public API access layer through a Railway public/custom domain. LiteLLM Proxy provides OpenAI-compatible routing, model aliases, virtual keys, budgets, rate limits, spend tracking, and the v1 Admin UI. Railway managed Postgres stores LiteLLM state. Cloudflare Tunnel, Cloudflare Access, WAF, or an edge origin guard are deferred hardening options.
+The system is a Railway-hosted, LiteLLM-first internal gateway. LiteLLM native authentication provides the Phase 0/MVP public API access layer through a Railway public/custom domain. LiteLLM Proxy provides OpenAI-compatible routing, model aliases, virtual keys, budgets, rate limits, spend tracking, and the v1 Admin UI. Railway managed Postgres stores LiteLLM state. Cloudflare Tunnel, Cloudflare Access, WAF, and edge-origin services are not part of the current implementation path.
 
 ## 2. Target architecture
 
@@ -26,7 +26,6 @@ Use separate Railway variables per environment. Staging must not inherit:
 
 - Production provider keys.
 - Production LiteLLM master key.
-- Optional Cloudflare Access AUD values if Cloudflare hardening is added later.
 - Production backup bucket credentials.
 - Production virtual keys.
 
@@ -45,7 +44,7 @@ Deferred from v1:
 - `admin-api`
 - `admin-web`
 - `admin-postgres`
-- `cloudflared-tunnel`, Cloudflare Access/WAF, or `llm-edge` / Envoy origin guard unless public-origin risk or production requirements justify them
+- Cloudflare Tunnel/Access/WAF or `llm-edge` / Envoy origin guard unless a later design decision explicitly reintroduces them
 
 ### 2.3 Public LLM API flow
 
@@ -76,7 +75,7 @@ For `admin.thaarei.com`, the Railway public domain, or an equivalent admin hostn
 3. LiteLLM UI/RBAC handles users, teams, virtual keys, budgets, spend, model aliases, and admin operations.
 4. Company-specific onboarding, alias guidance, and policy text live in repo docs/wiki unless a later custom portal is approved.
 
-If the public Admin UI exposure is not acceptable, add Cloudflare Access or another identity-aware gate specifically for the admin surface before production.
+If the public Admin UI exposure is not acceptable, stop before production and approve a separate identity-aware hardening design.
 
 ### 2.5 Private traffic
 
@@ -104,7 +103,7 @@ Browser code must never receive:
 | Gateway state database | Railway managed Postgres | Stores LiteLLM users, teams, virtual keys, budgets, spend, and metadata. |
 | Optional shared state/cache | Railway managed Redis | Deferred until multiple replicas, distributed rate limiting, or shared cache state are required. |
 | Public ingress/auth | Railway public/custom domain + LiteLLM native auth | Simplest MVP path; LiteLLM virtual keys, budgets, rate limits, and RBAC protect the public API. |
-| Deferred edge/origin hardening | Cloudflare Tunnel/Access/WAF or Envoy Proxy | Add if public-origin risk, SSO, WAF, or path-level origin protection becomes required. |
+| Deferred edge/origin hardening | Separate design required | Not part of the current implementation; add only if public-origin risk or production requirements justify a new design. |
 | Key request workflow | GitHub Issues/Actions or Slack Workflow | Lightweight enough for 10-15 developers; avoids a custom portal/database. |
 | Onboarding/docs | Repo docs, wiki, MkDocs, or Docusaurus | Static policy and alias docs are enough for v1. |
 | Smoke/API tests | pytest + httpx | Stable Python test stack for OpenAI-compatible API checks. |
@@ -117,7 +116,6 @@ Browser code must never receive:
 Managed/non-OSS dependencies intentionally used:
 
 - Railway hosting, managed Postgres, logs, metrics, variables.
-- Cloudflare DNS, Access, WAF, and service tokens.
 - External LLM providers.
 
 These are production dependencies, not custom gateway logic.
@@ -136,10 +134,6 @@ These are production dependencies, not custom gateway logic.
 |   |   |-- scripts
 |   |   |   `-- verify-config.sh
 |   |   `-- README.md
-|   |-- cloudflared-tunnel
-|   |   |-- Dockerfile
-|   |   |-- config.example.yml
-|   |   `-- README.md
 |   `-- backup-worker
 |       |-- Dockerfile
 |       |-- scripts
@@ -151,8 +145,6 @@ These are production dependencies, not custom gateway logic.
 |   |   |-- model-aliases.yaml
 |   |   |-- provider-denylist.yaml
 |   |   `-- policy.md
-|   |-- cloudflare
-|   |   `-- README.md
 |   `-- railway
 |       |-- README.md
 |       |-- staging.md
@@ -168,7 +160,6 @@ These are production dependencies, not custom gateway logic.
 |   |   |-- test_chat_completion.py
 |   |   |-- test_streaming.py
 |   |   |-- test_budget_block.py
-|   |   |-- test_cloudflare_block.py
 |   |   `-- test_no_prompt_log_leak.py
 |   `-- fixtures
 |-- docs
@@ -191,6 +182,7 @@ Deferred directories, only if a later custom portal or edge fallback is approved
 - `services\admin-api`
 - `services\admin-postgres` is not a repo directory, but the database service should also stay deferred
 - `services\llm-edge`
+- Cloudflare tunnel/access/edge service scaffolds
 
 ## 5. Service variable plan
 
@@ -203,7 +195,7 @@ Required variables:
 - `LITELLM_MASTER_KEY`: sealed; must start with `sk-`.
 - `OPENAI_API_KEY`: sealed.
 - `ANTHROPIC_API_KEY`: sealed.
-- `FIREWORKS_API_KEY`: sealed.
+- `FIREWORKS_AI_API_KEY`: sealed.
 - `PERPLEXITY_API_KEY`: sealed.
 - `PROXY_BASE_URL`: public LLM API URL, for metadata only.
 - `ENVIRONMENT`: `staging` or `production`.
@@ -212,35 +204,19 @@ Required variables:
 
 The service may expose a public Railway/custom domain only after LiteLLM native authentication, admin controls, budgets, rate limits, metadata-only logging, and secret handling are configured.
 
-### 5.2 Deferred `cloudflared-tunnel`
+### 5.2 Deferred edge fallback
 
-Only add this service later if Cloudflare Tunnel/Access is reintroduced as an origin guard or admin/API hardening layer.
-
-Required variables if implemented:
-
-- `CLOUDFLARE_TUNNEL_TOKEN`: sealed.
-- `LITELLM_PRIVATE_BASE_URL`
-- `TUNNEL_LOG_LEVEL`
-- `ENVIRONMENT`
-
-This service must not expose a public Railway domain. Cloudflare would own public DNS and Access policies if this hardening path is adopted.
-
-### 5.3 Deferred `llm-edge` fallback
-
-Only needed if LiteLLM-native public-origin auth is not sufficient and an edge origin guard is approved.
+Only needed if LiteLLM-native public-origin auth is not sufficient and a separate edge-origin design is approved.
 
 Required variables if implemented:
 
-- `CLOUDFLARE_ACCESS_ISSUER`
-- `CLOUDFLARE_ACCESS_AUD`
-- `CLOUDFLARE_ACCESS_JWKS_URL`
 - `LITELLM_PRIVATE_BASE_URL`
 - `ALLOWED_API_PATHS`
 - `BLOCKED_ADMIN_PATHS`
 - `REQUEST_TIMEOUT_SECONDS`
 - `STREAM_IDLE_TIMEOUT_SECONDS`
 
-### 5.4 Deferred `admin-api` and `admin-web`
+### 5.3 Deferred `admin-api` and `admin-web`
 
 No custom admin API or web service is part of v1. If a future phase approves them, they require a separate design review before any variables are created.
 
@@ -249,9 +225,6 @@ Future `admin-api` variables would include:
 - `ADMIN_DATABASE_URL`: Railway private/internal URL from future `admin-postgres`.
 - `LITELLM_PRIVATE_BASE_URL`
 - `LITELLM_ADMIN_KEY`: sealed and server-side only.
-- `CLOUDFLARE_ACCESS_ISSUER`
-- `CLOUDFLARE_ACCESS_AUD`
-- `CLOUDFLARE_ACCESS_JWKS_URL`
 - `ADMIN_ALLOWED_EMAIL_DOMAINS`
 - `ADMIN_ROLE_MAPPING`
 - `SESSION_SIGNING_SECRET` if sessions are used.
@@ -264,19 +237,25 @@ Future browser variables must never expose:
 - Database URLs.
 - Redis URLs.
 - Provider keys.
-- Cloudflare service-token secrets.
+- Edge service-token secrets.
 
-### 5.5 `backup-worker`
+### 5.4 `backup-worker`
 
 Required variables:
 
 - `LITELLM_DATABASE_URL`: private/internal.
-- `BACKUP_BUCKET_ENDPOINT`
-- `BACKUP_BUCKET_NAME`
-- `BACKUP_ACCESS_KEY_ID`
-- `BACKUP_SECRET_ACCESS_KEY`: sealed.
 - `BACKUP_ENCRYPTION_KEY`: sealed.
+- `BACKUP_RCLONE_DESTINATION`
+- `BACKUP_TIER`: `daily`, `weekly`, or `monthly`.
 - `BACKUP_RETENTION_DAYS`
+- `RCLONE_CONFIG_BACKUP_TYPE`
+- `RCLONE_CONFIG_BACKUP_PROVIDER`
+- `RCLONE_CONFIG_BACKUP_ENDPOINT`
+- `RCLONE_CONFIG_BACKUP_REGION`
+- `RCLONE_CONFIG_BACKUP_ACCESS_KEY_ID`
+- `RCLONE_CONFIG_BACKUP_SECRET_ACCESS_KEY`: sealed.
+- `RCLONE_CONFIG_BACKUP_ACL`
+- `RESTORE_DATABASE_URL`: only for fresh restore-drill databases.
 
 Backup credentials must be scoped only to the backup bucket/prefix.
 
@@ -317,14 +296,14 @@ Backup credentials must be scoped only to the backup bucket/prefix.
 - If Redis is added, use a short auth-cache TTL to balance performance with revocation responsiveness.
 - Test streaming explicitly because IDE tools often depend on it.
 
-### 6.3 Public-origin and optional Cloudflare rules
+### 6.3 Public-origin rules
 
 - LiteLLM-native auth is the approved Phase 0/MVP public-origin control.
 - Do not expose the public LiteLLM service until virtual-key auth, admin controls, budgets, rate limits, and metadata-only logging are configured.
 - Disable public docs/Swagger where supported.
 - Confirm developer virtual keys cannot access LiteLLM Admin UI or admin/control routes.
 - Alert on repeated 401/403 responses, spend spikes, provider errors, and gateway 5xx.
-- If Cloudflare Tunnel/Access/WAF is added later, document service-token renewal and revocation, validate streaming through Cloudflare, and avoid WAF body-inspection rules that break code/prose prompts on `/v1/chat/completions`.
+- If any edge-origin hardening is added later, document token renewal and revocation, validate streaming through that layer, and avoid body-inspection rules that break code/prose prompts on `/v1/chat/completions`.
 
 ## 7. Security controls
 
@@ -375,15 +354,12 @@ Create runbooks under `docs\runbooks` for:
 - Staging deployment.
 - Production deployment.
 - Rollback.
-- Optional Cloudflare Tunnel/Access/WAF or edge origin-guard setup, only if that hardening layer is introduced.
-- Optional Cloudflare/edge service-token rotation, only if that hardening layer is introduced.
 - LiteLLM virtual-key creation.
 - LiteLLM virtual-key revocation.
 - Provider key rotation.
 - Budget increase approval.
 - Budget/spend alert response.
 - LiteLLM Postgres outage.
-- Optional Cloudflare/edge outage, only if that hardening layer is introduced.
 - Provider outage and same-tier fallback validation.
 - Railway backup restore.
 - Off-platform logical backup restore.

@@ -1,6 +1,6 @@
 # V1 service boundaries
 
-**Status:** Phase 1 boundary decision
+**Status:** Phase 1 boundary decision; updated with Phase 9 production chat UI planning add-on
 **Related architecture:** `docs\internal-llm-gateway-architecture-tech-stack.md`
 **Related roadmap:** `docs\internal-llm-gateway-implementation-roadmap.md`
 
@@ -11,8 +11,18 @@
 | `litellm-proxy` | Railway app service running LiteLLM Proxy OSS and built-in Admin UI | Included in v1. Existing Dockerfile is a Phase 0 proof artifact; Phase 2 owns hardened config/scaffold work. |
 | `litellm-postgres` | Railway managed Postgres | Included in v1 as platform-managed state for LiteLLM users, teams, virtual keys, budgets, and spend. Not represented as a repo service directory. |
 | `backup-worker` | Future scheduled app service | Required before production for off-platform logical backups, but code and scripts are deferred to later phases. |
-| `cloudflared-tunnel` | Optional hardening service | Deferred unless public-origin risk, SSO, WAF, or origin-guard requirements justify it. |
 | `litellm-redis` | Railway managed Redis | Deferred unless multiple LiteLLM replicas, distributed rate limiting, or shared cache state are required. |
+
+## Production chat UI add-ons
+
+Phase 9 production planning includes Open WebUI and LibreChat as developer-facing UI add-ons connected to the production LiteLLM gateway.
+
+| Component | Boundary | Production planning decision |
+| --- | --- | --- |
+| Open WebUI | Separate Railway app service and dedicated UI data store/volume | Included as a production add-on, not as a gateway control plane or policy source. |
+| LibreChat | Separate Railway app/API service plus MongoDB, Meilisearch, pgvector, RAG API, and required volumes | Included as a production add-on, not as a gateway control plane or policy source. |
+
+Open WebUI and LibreChat must use scoped LiteLLM virtual keys, must not receive provider keys or LiteLLM master/admin keys, and must not reuse LiteLLM Postgres for UI state. Their production stores are durable content-bearing systems and require retention, access-control, backup, restore, RPO/RTO, and rollback planning before broad developer access.
 
 ## Explicitly deferred
 
@@ -21,6 +31,7 @@ Do not create these components without a later approved design decision:
 - `apps\admin-web`
 - `services\admin-api`
 - `services\llm-edge`
+- Cloudflare Tunnel/Access/WAF or edge-origin services
 - A custom admin database
 - A custom LLM router
 - Redis-backed multi-replica LiteLLM deployment
@@ -39,7 +50,7 @@ Clients and browser code must never receive:
 - Private Railway or internal hostnames.
 - Stack traces, SQL, or private operational error details.
 
-LiteLLM remains the v1 source of truth for virtual keys, model aliases, budgets, spend, users, teams, and provider routing. No custom Phase 1 artifact should become a second policy source.
+LiteLLM remains the v1 source of truth for virtual keys, model aliases, budgets, spend, users, teams, rate limits, and provider routing. Production chat UI add-ons must not become a second policy source and must not bypass LiteLLM aliases, budgets, or virtual-key controls.
 
 ## Runtime config source of truth
 

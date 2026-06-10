@@ -1,10 +1,9 @@
-FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
+FROM postgres:18-alpine@sha256:15b46a9c5a6b361eb4c0ce8d689365bf49fbf6802e615dce4e5e2326b3213e15
 
 RUN apk add --no-cache \
     bash \
     ca-certificates \
     openssl \
-    postgresql-client \
     rclone \
     tzdata
 

@@ -1,7 +1,7 @@
 # Repository structure
 
-**Status:** Phase 3 repository structure
-**Related roadmap phase:** Phase 3 - CI/CD, secret scanning, and policy gates
+**Status:** Current repository structure after Cloudflare tunnel cleanup
+**Related roadmap phase:** Phase 8 planning direction correction
 
 ## Current structure after Phase 3
 
@@ -21,8 +21,6 @@
 |       |-- image-policy.yml
 |       `-- staging-smoke.yml
 |-- config
-|   |-- cloudflare
-|   |   `-- README.md
 |   |-- litellm
 |   |   |-- README.md
 |   |   |-- model-aliases.yaml
@@ -50,10 +48,6 @@
 |   |   `-- scripts
 |   |       |-- backup-postgres.sh
 |   |       `-- restore-check.sh
-|   |-- cloudflared-tunnel
-|   |   |-- Dockerfile
-|   |   |-- README.md
-|   |   `-- config.example.yml
 |   `-- litellm
 |       |-- Dockerfile
 |       |-- README.md
@@ -65,13 +59,11 @@
     `-- smoke
         |-- test_budget_block.py
         |-- test_chat_completion.py
-        |-- test_cloudflare_block.py
         |-- test_no_prompt_log_leak.py
         `-- test_streaming.py
 ```
 
-This is a Phase 2 local scaffold and policy baseline, not a deployed staging stack.
-Phase 3 adds local and GitHub Actions enforcement gates, but still does not deploy staging or production resources.
+This repository now reflects the LiteLLM-native public Railway/custom endpoint path. Cloudflare Tunnel/Access/WAF and edge-origin scaffolds are not part of the current implementation.
 
 ## Active runtime config
 
@@ -90,7 +82,6 @@ Phase 2 adds:
 
 - LiteLLM runtime config and verifier.
 - LiteLLM alias, denylist, and policy metadata.
-- Deferred Cloudflare tunnel scaffold.
 - Backup worker scaffold.
 - Smoke test skeletons.
 - Local validation, provider config, model alias, and fallback-deferral docs.
@@ -110,6 +101,10 @@ Phase 3 adds:
 
 Phase 3 does not add durable Railway staging, production services, repository settings mutation, provider validation, or real smoke-test endpoint calls.
 
+## Phase 8 direction correction
+
+Phase 8 planning removed the active Cloudflare tunnel scaffold from the repository path. Historical status/evidence can still mention earlier Cloudflare scaffold work, and defensive secret-scanning rules remain, but current implementation docs should not require a Cloudflare tunnel, Cloudflare Access/WAF, or `llm-edge` service.
+
 ## Deferred directories
 
 The following directories must remain absent unless a later approved decision introduces them:
@@ -128,5 +123,6 @@ Every directory intended to exist after Phase 3 contains a tracked README, scrip
 - LiteLLM virtual keys and spend tracking require Postgres and a master key.
 - LiteLLM `/health/readiness` is appropriate for deployment readiness; `/health` probes providers.
 - Railway variables should hold sealed secrets and service references, not committed values.
+- Railway Phase 4 created durable staging service shells. Future source attachment must keep repository root as build context because service Dockerfiles use repository-root-relative `COPY` paths.
 - Railway detects service Dockerfiles by name/path and supports config-as-code in later phases.
 - GitHub Actions use least privilege, no secrets for Phase 3 gates, safe expression handling, `persist-credentials: false`, and full-SHA-pinned actions.

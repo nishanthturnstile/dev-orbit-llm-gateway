@@ -3,7 +3,7 @@
 **Status:** Phase 3 baseline
 **Primary repo-local scanner:** Gitleaks with `.gitleaks.toml`
 
-Secret scanning protects this gateway from committing provider keys, LiteLLM keys, database URLs, private keys, Cloudflare tokens, backup credentials, and private/public infrastructure hostnames.
+Secret scanning protects this gateway from committing provider keys, LiteLLM keys, database URLs, private keys, tunnel or edge-service tokens, backup credentials, and private/public infrastructure hostnames.
 
 ## Repo-local enforcement
 

@@ -4,18 +4,23 @@
 
 ## Alias policy
 
-The Phase 2 runtime config defines these aliases:
+The approved runtime config defines these developer-facing aliases:
 
-| Alias | Purpose | Validation status |
-| --- | --- | --- |
-| `dev-fast` | Low-latency general development use. | Validated in Phase 0 with OpenAI `gpt-4o-mini`. |
-| `dev-code` | Code-focused development assistance. | Requires model availability validation before staging deployment. |
-| `dev-reasoning` | Reasoning tasks with higher latency tolerance. | Requires model availability and timeout validation before staging deployment. |
-| `dev-long-context` | Long-context analysis. | Requires model availability and context validation before staging deployment. |
-| `batch-analysis` | Non-interactive analysis jobs. | Requires budget and batch-use validation before staging deployment. |
-| `dev-search` | Search-augmented answers. | Requires approved Perplexity credentials before deployment or use. |
-| `dev-embed` | Embedding workflows. | Requires embedding route validation before staging deployment. |
-| `dev-vision` | Chat completions with image input. | Requires vision route validation before staging deployment. |
+| Alias | Access | Purpose | Validation status |
+| --- | --- | --- | --- |
+| `dev-fast` | Default | Fast, low-cost questions, small snippets, and quick iteration. | Requires Fireworks AI runtime validation. |
+| `dev-code` | Default | Default coding model. Use when unsure. | Requires Fireworks AI runtime validation. |
+| `dev-long-horizon` | Default | Long-running agent loops, large refactors, and multi-step engineering tasks. | Requires Fireworks AI runtime validation. |
+| `dev-reasoning` | Default | Planning, complex reasoning, and tool-heavy productivity tasks. | Requires Fireworks AI runtime validation. |
+| `dev-search` | Default | Search-augmented answers. | Requires approved Perplexity credentials and runtime validation. |
+| `dev-embed` | Default | Embedding workflows. | Requires embedding route validation. |
+| `dev-vision` | Default | Chat completions with image input. | Requires vision route validation. |
+| `premium-code` | Restricted | Hard coding and debugging when `dev-code` is insufficient. | Requires OpenAI premium model validation. |
+| `premium-planning` | Restricted | High-quality planning, review, and clarification. | Requires Anthropic premium model validation. |
+| `ultra-premium-code` | Tightly restricted | Highest-value coding and debugging only. | Requires explicit operator approval and validation. |
+| `ultra-premium-planning` | Tightly restricted | Highest-value architecture, planning, and second-model review only. | Requires explicit operator approval and validation. |
+
+`batch-analysis`, `docs-qa`, and `dev-long-context` are intentionally absent. Documentation and clarification work should use `dev-code` by default and escalate to `premium-planning` only when needed.
 
 `sensitive-code` and all `sensitive-*` aliases are forbidden until a separate security review approves them.
 
@@ -34,7 +39,7 @@ The Phase 2 runtime config defines these aliases:
 
 Phase 2 intentionally defines no fallbacks. Zero fallbacks is stricter than, and therefore compliant with, the roadmap rule that fallbacks must be same-tier only.
 
-A later phase may add same-tier fallbacks only after the fallback provider/model is credited, approved, and validated. Any fallback added before deployment must be validated in Phase 5.
+A later phase may add same-tier fallbacks only after the fallback provider/model is credited, approved, and validated. Premium and ultra-premium aliases must never fall back to regular/default-tier models. Any fallback added before deployment must be validated in Phase 5.
 
 ## Health details
 

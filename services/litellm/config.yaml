@@ -1,8 +1,8 @@
 model_list:
   - model_name: dev-fast
     litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
+      model: fireworks_ai/accounts/fireworks/models/gpt-oss-120b
+      api_key: os.environ/FIREWORKS_AI_API_KEY
       timeout: 60
       num_retries: 2
     model_info:
@@ -10,37 +10,28 @@ model_list:
 
   - model_name: dev-code
     litellm_params:
-      model: openai/gpt-4.1-mini
-      api_key: os.environ/OPENAI_API_KEY
-      timeout: 90
+      model: fireworks_ai/accounts/fireworks/models/kimi-k2p6
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      timeout: 120
       num_retries: 1
+    model_info:
+      mode: chat
+
+  - model_name: dev-long-horizon
+    litellm_params:
+      model: fireworks_ai/accounts/fireworks/models/glm-5p1
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      timeout: 300
+      num_retries: 0
     model_info:
       mode: chat
 
   - model_name: dev-reasoning
     litellm_params:
-      model: openai/o4-mini
-      api_key: os.environ/OPENAI_API_KEY
-      timeout: 180
+      model: fireworks_ai/accounts/fireworks/models/minimax-m2p7
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+      timeout: 240
       num_retries: 0
-    model_info:
-      mode: chat
-
-  - model_name: dev-long-context
-    litellm_params:
-      model: openai/gpt-4.1-mini
-      api_key: os.environ/OPENAI_API_KEY
-      timeout: 180
-      num_retries: 0
-    model_info:
-      mode: chat
-
-  - model_name: batch-analysis
-    litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
-      timeout: 180
-      num_retries: 1
     model_info:
       mode: chat
 
@@ -71,6 +62,42 @@ model_list:
     model_info:
       mode: chat
 
+  - model_name: premium-code
+    litellm_params:
+      model: openai/gpt-5.4
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 180
+      num_retries: 0
+    model_info:
+      mode: chat
+
+  - model_name: premium-planning
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 240
+      num_retries: 0
+    model_info:
+      mode: chat
+
+  - model_name: ultra-premium-code
+    litellm_params:
+      model: openai/gpt-5.5
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 240
+      num_retries: 0
+    model_info:
+      mode: chat
+
+  - model_name: ultra-premium-planning
+    litellm_params:
+      model: anthropic/claude-opus-4-8
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 300
+      num_retries: 0
+    model_info:
+      mode: chat
+
 litellm_settings:
   request_timeout: 90
   num_retries: 1
@@ -81,3 +108,4 @@ general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL
   store_model_in_db: true
+  health_check_details: false
