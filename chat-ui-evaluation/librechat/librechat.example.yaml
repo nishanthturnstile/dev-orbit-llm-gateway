@@ -15,7 +15,7 @@ endpoints:
           - "dev-fast"
           - "dev-code"
           - "dev-reasoning"
-          - "dev-long-context"
+          - "dev-long-horizon"
       titleConvo: true
       titleModel: "dev-fast"
       summarize: true

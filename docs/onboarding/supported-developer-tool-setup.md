@@ -42,7 +42,7 @@ $env:OPENAI_API_KEY = '<liteLLM-virtual-key>'
 $env:OPENAI_BASE_URL = '<staging-public-base-url>/v1'
 ```
 
-Use LiteLLM aliases such as `dev-fast`, `dev-code`, or `dev-reasoning`; do not configure direct provider model names.
+Use LiteLLM aliases such as `dev-code`, `dev-fast`, `dev-long-horizon`, or `dev-reasoning`; do not configure direct provider model names. Use `dev-code` as the default coding model when unsure.
 
 ## Evidence template
 

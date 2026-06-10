@@ -78,8 +78,8 @@ The LiteLLM Admin UI is enabled for private staging testing with sealed `UI_USER
 | Forbidden alias denial | Passed |
 | `/ui`, `/docs`, `/redoc`, `/openapi.json` | `/ui` returns the Admin UI shell privately; docs/ReDoc/OpenAPI remain disabled/protected |
 | Recent log secret/private-host/traceback scan | Zero matches after log-redaction wrapper deployment |
-| OpenAI-backed chat/stream/embedding | Passed |
-| OpenAI-backed aliases | `dev-fast`, `dev-code`, `dev-reasoning`, `dev-long-context`, `batch-analysis`, `dev-vision`, and `dev-embed` passed |
+| Previous OpenAI-backed chat/stream/embedding | Passed before Fireworks/premium alias expansion |
+| Current expanded alias set | Needs fresh staging validation after sealing `FIREWORKS_AI_API_KEY` and `ANTHROPIC_API_KEY` |
 | Key metadata persistence and RPM enforcement | Passed |
 | `dev-search` | Passed with rotated staged `PERPLEXITY_API_KEY`; disposable validation key was blocked after test |
 

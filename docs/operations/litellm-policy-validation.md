@@ -6,7 +6,7 @@ This document records the non-secret Phase 5 validation plan and evidence shape 
 
 | Decision | Value |
 | --- | --- |
-| Provider scope | OpenAI-backed aliases first |
+| Provider scope | Fireworks-backed default aliases, utility aliases, and restricted premium aliases |
 | `dev-search` | Alias remains present; runtime validation passed after operator rotated the staged `PERPLEXITY_API_KEY` |
 | Admin UI | Enabled for private staging test with strong `UI_USERNAME` / `UI_PASSWORD`; no public URL exists |
 | OpenAPI schema | Disabled with `NO_OPENAPI=True` |
@@ -20,24 +20,25 @@ The pinned LiteLLM image still served the Admin UI shell with only the documente
 
 ## Current status
 
-Phase 5 private runtime validation now passes the former `dev-search` blocker after the operator rotated the staged `PERPLEXITY_API_KEY`. Railway `litellm-proxy` deployment `095bc349-2e77-4552-9ab4-ff36d54bb506` is healthy with no public URL. Private checks confirmed readiness, auth rejection, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, developer admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, Admin UI private reachability, docs/ReDoc/OpenAPI closure, and targeted `dev-search` validation with immediate disposable-key blocking.
+Phase 5 private runtime validation passed for the previous OpenAI-backed alias set. The current local config has since been expanded to Fireworks-backed default aliases plus restricted OpenAI/Anthropic premium aliases. Those new routes require fresh staging validation before they are considered production-ready.
 
 ## Required runtime checks
 
 1. `/health/readiness` reports ready and DB connected.
 2. Missing and invalid bearer keys are rejected.
-3. A short-lived disposable developer key succeeds on approved OpenAI-backed aliases.
+3. A short-lived disposable regular developer key succeeds on approved default aliases and is denied premium/ultra-premium aliases.
 4. Streaming works on `dev-fast`.
 5. Embeddings work on `dev-embed`.
 6. Vision is validated if the OpenAI account supports it; otherwise record the provider/account limitation.
 7. `dev-search` succeeds with a valid approved Perplexity key.
-8. `sensitive-code` and direct wildcard/provider model names fail.
-9. Developer keys cannot access admin/control routes.
-10. `/ui`, `/docs`, `/redoc`, and `/openapi.json` are unavailable or protected.
-11. Spend metadata is visible through a non-secret admin endpoint or validation path that does not put generated keys in URLs.
-12. Key/spend state persists after restart or redeploy.
-13. Disposable validation keys are blocked and verified unusable after validation.
-14. Health, error, and log output do not expose secrets, database URLs, private hostnames, raw prompts, raw responses, stack traces, or SQL.
+8. A short-lived premium validation key succeeds on `premium-code`, `premium-planning`, `ultra-premium-code`, and `ultra-premium-planning` under operator-approved spend controls.
+9. `sensitive-code` and direct wildcard/provider model names fail.
+10. Developer keys cannot access admin/control routes.
+11. `/ui`, `/docs`, `/redoc`, and `/openapi.json` are unavailable or protected.
+12. Spend metadata is visible through a non-secret admin endpoint or validation path that does not put generated keys in URLs.
+13. Key/spend state persists after restart or redeploy.
+14. Disposable validation keys are blocked and verified unusable after validation.
+15. Health, error, and log output do not expose secrets, database URLs, private hostnames, raw prompts, raw responses, stack traces, or SQL.
 
 ## Phase 5 validation evidence
 
@@ -47,7 +48,9 @@ Phase 5 private runtime validation now passes the former `dev-search` blocker af
 | Public URL | None |
 | Readiness | `200`, DB connected |
 | Missing/invalid auth | `401` rejection |
-| OpenAI-backed chat aliases | Passed for `dev-fast`, `dev-code`, `dev-reasoning`, `dev-long-context`, `batch-analysis`, and `dev-vision` |
+| Previous OpenAI-backed chat aliases | Passed for the old alias set before the Fireworks/premium expansion |
+| Current Fireworks-backed default aliases | Needs fresh staging validation for `dev-fast`, `dev-code`, `dev-long-horizon`, and `dev-reasoning` |
+| Current premium aliases | Needs fresh staging validation for `premium-code`, `premium-planning`, `ultra-premium-code`, and `ultra-premium-planning` |
 | Streaming | Passed on `dev-fast` |
 | Embeddings | Passed on `dev-embed` |
 | `dev-search` | Passed with rotated staged `PERPLEXITY_API_KEY`; disposable validation key was blocked after test |

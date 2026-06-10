@@ -195,7 +195,7 @@ Required variables:
 - `LITELLM_MASTER_KEY`: sealed; must start with `sk-`.
 - `OPENAI_API_KEY`: sealed.
 - `ANTHROPIC_API_KEY`: sealed.
-- `FIREWORKS_API_KEY`: sealed.
+- `FIREWORKS_AI_API_KEY`: sealed.
 - `PERPLEXITY_API_KEY`: sealed.
 - `PROXY_BASE_URL`: public LLM API URL, for metadata only.
 - `ENVIRONMENT`: `staging` or `production`.

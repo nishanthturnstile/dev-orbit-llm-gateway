@@ -41,7 +41,10 @@ Current Dockerfiles use repository-root-relative `COPY` paths. Keep Railway buil
 3. Set only sealed runtime secrets through Railway, never in repository docs or command output:
    - `LITELLM_MASTER_KEY` with required `sk-` prefix
    - `LITELLM_SALT_KEY` before first boot while `store_model_in_db: true` remains enabled
+   - approved staging `FIREWORKS_AI_API_KEY`
    - approved staging `OPENAI_API_KEY`
+   - approved staging `ANTHROPIC_API_KEY`
+   - approved staging `PERPLEXITY_API_KEY`
 4. Confirm `DATABASE_URL` remains a Railway service reference:
    - `${{Postgres.DATABASE_URL}}`
 5. Attach source for `litellm-proxy` only after secrets and deployment config are ready.
@@ -60,7 +63,7 @@ Run this only from an operator-controlled terminal. It prompts securely and sets
 pwsh -NoProfile -File scripts\phase5-set-railway-secrets.ps1
 ```
 
-Phase 5 deployment must not run until this succeeds. The helper sets `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, `OPENAI_API_KEY`, and `PERPLEXITY_API_KEY` without printing values.
+Phase 5 deployment must not run until this succeeds. The helper sets `LITELLM_MASTER_KEY`, `LITELLM_SALT_KEY`, `FIREWORKS_AI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `PERPLEXITY_API_KEY` without printing values.
 
 If provider-backed validation fails with an authentication error, rerun the same helper and enter corrected provider keys; keep deploys skipped, then restart or redeploy `litellm-proxy` and rerun private validation.
 
@@ -73,7 +76,7 @@ $railway = Join-Path $env:APPDATA 'npm\railway.cmd'
 & $railway ssh --project 0b1bc0ec-4ace-47c3-bd13-214256c27ad5 --environment staging --service litellm-proxy -- python /app/phase5_validate_litellm.py --base-url http://127.0.0.1:4000 --include-rpm-enforcement
 ```
 
-The validator prints redacted pass/fail JSON and blocks disposable validation keys before exiting. Do not use `--allow-dev-search-deferred` for Phase 5 completion; that flag is only for isolating OpenAI-backed validation while Perplexity credentials are being corrected.
+The validator prints redacted pass/fail JSON and blocks disposable validation keys before exiting. Do not use `--allow-dev-search-deferred` for Phase 5 completion; that flag is only for isolating default alias validation while Perplexity credentials are being corrected.
 
 ## Private networking interpretation
 

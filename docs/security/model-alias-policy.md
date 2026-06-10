@@ -2,18 +2,23 @@
 
 The runtime source of truth for aliases is `services\litellm\config.yaml`. `config\litellm\model-aliases.yaml` is metadata used by validation and documentation.
 
-## Required aliases
+## Approved aliases
 
-| Alias | Tier | Runtime status |
+| Alias | Access | Runtime status |
 | --- | --- | --- |
-| `dev-fast` | fast | Validated in Phase 0 with OpenAI `gpt-4o-mini`. |
-| `dev-code` | code | Requires model availability validation before staging. |
-| `dev-reasoning` | reasoning | Requires model availability and timeout validation before staging. |
-| `dev-long-context` | long-context | Requires model availability and context validation before staging. |
-| `batch-analysis` | batch | Requires budget and batch-use validation before staging. |
-| `dev-search` | search | Requires approved Perplexity credentials before deployment or use. |
-| `dev-embed` | embedding | Requires embedding route validation before staging. |
-| `dev-vision` | vision | Requires chat-with-image validation before staging. |
+| `dev-fast` | Default | Fireworks AI `gpt-oss-120b`; requires runtime validation. |
+| `dev-code` | Default | Fireworks AI `kimi-k2p6`; default coding alias, requires runtime validation. |
+| `dev-long-horizon` | Default | Fireworks AI `glm-5p1`; requires runtime validation. |
+| `dev-reasoning` | Default | Fireworks AI `minimax-m2p7`; requires runtime validation. |
+| `dev-search` | Default | Perplexity `sonar`; requires approved credentials and runtime validation. |
+| `dev-embed` | Default | OpenAI embedding route; requires embedding validation. |
+| `dev-vision` | Default | Existing approved vision route; requires chat-with-image validation. |
+| `premium-code` | Restricted | OpenAI `gpt-5.4`; requires lead/admin approval and runtime validation. |
+| `premium-planning` | Restricted | Anthropic `claude-sonnet-4-6`; requires lead/admin approval and runtime validation. |
+| `ultra-premium-code` | Tightly restricted | OpenAI `gpt-5.5`; requires explicit operator approval and runtime validation. |
+| `ultra-premium-planning` | Tightly restricted | Anthropic `claude-opus-4-8`; requires explicit operator approval and runtime validation. |
+
+`batch-analysis`, `docs-qa`, and `dev-long-context` are intentionally absent. Documentation and clarifying-question work should use `dev-code` by default, then escalate to `premium-planning` only when needed.
 
 ## Forbidden aliases
 
@@ -21,7 +26,7 @@ The runtime source of truth for aliases is `services\litellm\config.yaml`. `conf
 
 ## Fallbacks
 
-Phase 2 defines no fallbacks. This satisfies the same-tier-only rule by omission. Same-tier fallbacks may be added later only after explicit provider/model validation, and must be validated again before production.
+The runtime config defines no fallbacks. This satisfies the same-tier-only rule by omission. Same-tier fallbacks may be added later only after explicit provider/model validation, and must be validated again before production. Premium and ultra-premium aliases must never fall back to regular/default-tier models.
 
 ## Logging and cache
 

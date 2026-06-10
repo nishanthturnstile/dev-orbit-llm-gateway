@@ -263,11 +263,14 @@ Define these initial aliases:
 - `dev-fast`
 - `dev-code`
 - `dev-reasoning`
-- `dev-long-context`
-- `batch-analysis`
+- `dev-long-horizon`
 - `dev-search`
 - `dev-embed`
 - `dev-vision`
+- `premium-code`
+- `premium-planning`
+- `ultra-premium-code`
+- `ultra-premium-planning`
 
 Do not define `sensitive-code`.
 
@@ -450,11 +453,14 @@ This phase owns deployment and runtime validation. It does not redefine aliases 
     - `dev-fast`
     - `dev-code`
     - `dev-reasoning`
-    - `dev-long-context`
-    - `batch-analysis`
+    - `dev-long-horizon`
     - `dev-search` remains present but runtime validation is blocked until a valid approved `PERPLEXITY_API_KEY` is sealed and loaded.
     - `dev-embed`
     - `dev-vision`
+    - `premium-code`
+    - `premium-planning`
+    - `ultra-premium-code`
+    - `ultra-premium-planning`
 - Validate `sensitive-code` is absent.
 - Validate same-tier fallbacks only.
 - Validate retries and timeouts.

@@ -63,6 +63,16 @@ if ([string]::IsNullOrWhiteSpace($openAiKey)) {
     throw "OPENAI_API_KEY cannot be empty"
 }
 
+$anthropicKey = ConvertFrom-SecureStringToPlainText (Read-Host "Enter ANTHROPIC_API_KEY" -AsSecureString)
+if ([string]::IsNullOrWhiteSpace($anthropicKey)) {
+    throw "ANTHROPIC_API_KEY cannot be empty"
+}
+
+$fireworksAiKey = ConvertFrom-SecureStringToPlainText (Read-Host "Enter FIREWORKS_AI_API_KEY" -AsSecureString)
+if ([string]::IsNullOrWhiteSpace($fireworksAiKey)) {
+    throw "FIREWORKS_AI_API_KEY cannot be empty"
+}
+
 $perplexityKey = ConvertFrom-SecureStringToPlainText (Read-Host "Enter PERPLEXITY_API_KEY" -AsSecureString)
 if ([string]::IsNullOrWhiteSpace($perplexityKey)) {
     throw "PERPLEXITY_API_KEY cannot be empty"
@@ -71,6 +81,8 @@ if ([string]::IsNullOrWhiteSpace($perplexityKey)) {
 Set-RailwaySecret -Name "LITELLM_MASTER_KEY" -Value $masterKey
 Set-RailwaySecret -Name "LITELLM_SALT_KEY" -Value $saltKey
 Set-RailwaySecret -Name "OPENAI_API_KEY" -Value $openAiKey
+Set-RailwaySecret -Name "ANTHROPIC_API_KEY" -Value $anthropicKey
+Set-RailwaySecret -Name "FIREWORKS_AI_API_KEY" -Value $fireworksAiKey
 Set-RailwaySecret -Name "PERPLEXITY_API_KEY" -Value $perplexityKey
 
 Set-RailwayValue -Pair 'DATABASE_URL=${{Postgres.DATABASE_URL}}'

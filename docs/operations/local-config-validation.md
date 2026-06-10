@@ -25,8 +25,8 @@ pwsh -NoProfile -File scripts\lint-litellm-config.ps1
 The verifier checks:
 
 - `services\litellm\config.yaml` parses.
-- Required aliases exist.
-- `config\litellm\model-aliases.yaml` alias names match runtime aliases.
+- Approved aliases are defined in `config\litellm\model-aliases.yaml`.
+- `config\litellm\model-aliases.yaml` alias names match runtime aliases without duplicates.
 - `config\litellm\provider-denylist.yaml` rules are enforced.
 - `sensitive-code` and `sensitive-*` are absent.
 - Runtime secrets are environment references.

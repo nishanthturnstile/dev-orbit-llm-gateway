@@ -30,26 +30,35 @@ FORBIDDEN_DETAIL_MARKERS = [
     "postgres://",
     "railway" + ".internal",
     "openai_api_key",
+    "anthropic_api_key",
+    "fireworks_ai_api_key",
+    "fireworks_api_key",
     "perplexity_api_key",
     "pplx-",
     "sqlalchemy",
     "prisma.",
 ]
 
-OPENAI_CHAT_ALIASES = (
+DEFAULT_CHAT_ALIASES = (
     "dev-fast",
     "dev-code",
+    "dev-long-horizon",
     "dev-reasoning",
-    "dev-long-context",
-    "batch-analysis",
     "dev-vision",
 )
 
 DEFAULT_KEY_MODELS = [
-    *OPENAI_CHAT_ALIASES,
+    *DEFAULT_CHAT_ALIASES,
     "dev-search",
     "dev-embed",
 ]
+
+PREMIUM_CHAT_ALIASES = (
+    "premium-code",
+    "premium-planning",
+    "ultra-premium-code",
+    "ultra-premium-planning",
+)
 
 
 @dataclass
@@ -291,6 +300,7 @@ def main() -> int:
         return 1
 
     dev_key: str | None = extract_key(content)
+    premium_key: str | None = None
     rpm_key: str | None = None
 
     try:
@@ -319,7 +329,7 @@ def main() -> int:
             content,
         )
 
-        for alias in OPENAI_CHAT_ALIASES[1:]:
+        for alias in DEFAULT_CHAT_ALIASES[1:]:
             alias_body = {
                 "model": alias,
                 "messages": [{"role": "user", "content": "Reply with exactly OK."}],
@@ -381,9 +391,71 @@ def main() -> int:
         add_http_check(checks, "sensitive-code denied", status, content, {400, 401, 403}, "forbidden alias denied")
 
         direct_model_body = dict(chat_body)
-        direct_model_body["model"] = "openai/gpt-4o-mini"
+        direct_model_body["model"] = "fireworks_ai/accounts/fireworks/models/gpt-oss-120b"
         status, content = request(args.base_url, "/v1/chat/completions", method="POST", bearer=dev_key, body=direct_model_body)
         add_http_check(checks, "direct provider model denied", status, content, {400, 401, 403}, "direct provider model denied")
+
+        for alias in PREMIUM_CHAT_ALIASES:
+            premium_body = {
+                "model": alias,
+                "messages": [{"role": "user", "content": "Reply with exactly OK."}],
+                "max_tokens": 10,
+            }
+            status, content = request(args.base_url, "/v1/chat/completions", method="POST", bearer=dev_key, body=premium_body)
+            add_http_check(
+                checks,
+                f"default key denied {alias}",
+                status,
+                content,
+                {400, 401, 403},
+                "premium alias denied for default key",
+            )
+
+        premium_key_alias = f"phase5-premium-{int(time.time())}"
+        premium_key_body = {
+            "key_alias": premium_key_alias,
+            "models": list(PREMIUM_CHAT_ALIASES),
+            "max_budget": args.max_validation_budget,
+            "rpm_limit": 5,
+            "duration": "1h",
+            "metadata": {"phase": "phase5", "purpose": "premium-runtime-validation"},
+        }
+        status, content = request(args.base_url, "/key/generate", method="POST", bearer=master_key, body=premium_key_body)
+        add_success_or_detail(checks, "generate premium disposable key", status, 200 <= status < 300, "premium disposable key generated", content)
+        if 200 <= status < 300:
+            premium_key = extract_key(content)
+            metadata_status, record, metadata_detail = find_key_record(args.base_url, premium_key, premium_key_alias)
+            metadata_ok, metadata_message = validate_key_metadata(
+                record,
+                list(PREMIUM_CHAT_ALIASES),
+                args.max_validation_budget,
+                5,
+            )
+            add(
+                checks,
+                "premium key metadata persisted",
+                metadata_status,
+                200 <= metadata_status < 300 and metadata_ok,
+                metadata_message if metadata_ok else metadata_detail or metadata_message,
+            )
+            for alias in PREMIUM_CHAT_ALIASES:
+                premium_body = {
+                    "model": alias,
+                    "messages": [{"role": "user", "content": "Reply with exactly OK."}],
+                    "max_tokens": 10,
+                }
+                status, content = request(args.base_url, "/v1/chat/completions", method="POST", bearer=premium_key, body=premium_body)
+                add_success_or_detail(
+                    checks,
+                    f"{alias} chat",
+                    status,
+                    200 <= status < 300 and not contains_forbidden_detail(content),
+                    "chat completion succeeded",
+                    content,
+                )
+            status, content = request(args.base_url, "/key/block", method="POST", bearer=master_key, body={"key": premium_key})
+            add_success_or_detail(checks, "block premium disposable key", status, 200 <= status < 300, "premium disposable key blocked", content)
+            premium_key = None
 
         status, content = request(args.base_url, "/key/list", bearer=dev_key)
         add_http_check(checks, "developer key admin route denied", status, content, {401, 403}, "developer key denied admin route")
@@ -483,6 +555,9 @@ def main() -> int:
         if rpm_key:
             status, content = request(args.base_url, "/key/block", method="POST", bearer=master_key, body={"key": rpm_key})
             add_success_or_detail(checks, "block rpm key", status, 200 <= status < 300, "rpm key blocked", content)
+        if premium_key:
+            status, content = request(args.base_url, "/key/block", method="POST", bearer=master_key, body={"key": premium_key})
+            add_success_or_detail(checks, "block premium disposable key", status, 200 <= status < 300, "premium disposable key blocked", content)
 
     passed = all(check.passed for check in checks)
     print(json.dumps({"passed": passed, "checks": [check.__dict__ for check in checks]}, indent=2))

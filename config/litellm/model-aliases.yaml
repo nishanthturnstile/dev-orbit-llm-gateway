@@ -3,41 +3,43 @@
 aliases:
   - name: dev-fast
     tier: fast
-    provider_family: openai
-    default_runtime_model: openai/gpt-4o-mini
-    phase0_validated: true
-    intended_use: Low-latency general development assistance.
+    access: default
+    provider_family: fireworks-ai
+    default_runtime_model: fireworks_ai/accounts/fireworks/models/gpt-oss-120b
+    phase0_validated: false
+    requires_provider_validation: true
+    intended_use: Fast, low-cost questions, small snippets, and quick iteration.
 
   - name: dev-code
     tier: code
-    provider_family: openai
-    default_runtime_model: openai/gpt-4.1-mini
+    access: default
+    provider_family: fireworks-ai
+    default_runtime_model: fireworks_ai/accounts/fireworks/models/kimi-k2p6
     phase0_validated: false
-    intended_use: Code-focused development assistance after model availability validation.
+    requires_provider_validation: true
+    intended_use: Default coding model. Use when unsure.
+
+  - name: dev-long-horizon
+    tier: long-horizon
+    access: default
+    provider_family: fireworks-ai
+    default_runtime_model: fireworks_ai/accounts/fireworks/models/glm-5p1
+    phase0_validated: false
+    requires_provider_validation: true
+    intended_use: Long-running agent loops, large refactors, and multi-step engineering tasks.
 
   - name: dev-reasoning
     tier: reasoning
-    provider_family: openai
-    default_runtime_model: openai/o4-mini
+    access: default
+    provider_family: fireworks-ai
+    default_runtime_model: fireworks_ai/accounts/fireworks/models/minimax-m2p7
     phase0_validated: false
-    intended_use: Higher-latency reasoning tasks after model availability validation.
-
-  - name: dev-long-context
-    tier: long-context
-    provider_family: openai
-    default_runtime_model: openai/gpt-4.1-mini
-    phase0_validated: false
-    intended_use: Long-context development and analysis after model availability validation.
-
-  - name: batch-analysis
-    tier: batch
-    provider_family: openai
-    default_runtime_model: openai/gpt-4o-mini
-    phase0_validated: false
-    intended_use: Non-interactive analysis jobs with explicit budgets.
+    requires_provider_validation: true
+    intended_use: Planning, complex reasoning, and tool-heavy productivity tasks.
 
   - name: dev-search
     tier: search
+    access: default
     provider_family: perplexity
     default_runtime_model: perplexity/sonar
     phase0_validated: false
@@ -46,6 +48,7 @@ aliases:
 
   - name: dev-embed
     tier: embedding
+    access: default
     provider_family: openai
     default_runtime_model: openai/text-embedding-3-small
     phase0_validated: false
@@ -53,7 +56,44 @@ aliases:
 
   - name: dev-vision
     tier: vision
+    access: default
     provider_family: openai
     default_runtime_model: openai/gpt-4o-mini
     phase0_validated: false
     intended_use: Chat completions with image input after vision route validation.
+
+  - name: premium-code
+    tier: premium-code
+    access: restricted
+    provider_family: openai
+    default_runtime_model: openai/gpt-5.4
+    phase0_validated: false
+    requires_provider_validation: true
+    intended_use: Hard coding and debugging when the default dev-code alias is insufficient.
+
+  - name: premium-planning
+    tier: premium-planning
+    access: restricted
+    provider_family: anthropic
+    default_runtime_model: anthropic/claude-sonnet-4-6
+    phase0_validated: false
+    requires_provider_validation: true
+    intended_use: High-quality planning, review, and clarification.
+
+  - name: ultra-premium-code
+    tier: ultra-premium-code
+    access: tightly-restricted
+    provider_family: openai
+    default_runtime_model: openai/gpt-5.5
+    phase0_validated: false
+    requires_provider_validation: true
+    intended_use: Highest-value coding and debugging only.
+
+  - name: ultra-premium-planning
+    tier: ultra-premium-planning
+    access: tightly-restricted
+    provider_family: anthropic
+    default_runtime_model: anthropic/claude-opus-4-8
+    phase0_validated: false
+    requires_provider_validation: true
+    intended_use: Highest-value architecture, planning, and second-model review only.

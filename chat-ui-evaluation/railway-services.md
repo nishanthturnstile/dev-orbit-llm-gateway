@@ -11,7 +11,7 @@ All services must live in the existing staging environment as separate services/
 | LiteLLM endpoint | Use the approved staging public endpoint with `/v1`; keep literal hostnames out of tracked docs. |
 | Open WebUI keys | Create separate scoped, budgeted LiteLLM virtual keys for `open-webui-eval-chat` and `open-webui-eval-rag`. |
 | LibreChat key | Create a scoped, budgeted LiteLLM virtual key named for `librechat-eval`. |
-| Allowed aliases | Start with `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`; add `dev-search` or `dev-embed` only when the UI feature needs them. |
+| Allowed aliases | Start with `dev-fast`, `dev-code`, `dev-long-horizon`, and `dev-reasoning`; add `dev-search` or `dev-embed` only when the UI feature needs them. |
 | Admin routes | UI keys must not access LiteLLM admin/control routes. |
 | Budgets | Use low staging budgets, RPM/TPM limits, and max parallel request limits. |
 
@@ -40,7 +40,7 @@ Required controls:
 
 - Attach a Railway volume at `/app/backend/data`.
 - Set `WEBUI_AUTH=True`, `ENABLE_LOGIN_FORM=True`, `DEFAULT_USER_ROLE=user`, `ENABLE_DIRECT_CONNECTIONS=False`, and `ENABLE_OLLAMA_API=False`.
-- Set `ENABLE_EVALUATION_ARENA_MODELS=False`, `ENABLE_MODEL_FILTER=True`, and `MODEL_FILTER_LIST=dev-fast;dev-code;dev-reasoning;dev-long-context` so chat selection exposes only approved LiteLLM chat aliases.
+- Set `ENABLE_EVALUATION_ARENA_MODELS=False`, `ENABLE_MODEL_FILTER=True`, and `MODEL_FILTER_LIST=dev-fast;dev-code;dev-long-horizon;dev-reasoning` so chat selection exposes only approved LiteLLM chat aliases.
 - Use separate LiteLLM keys: `OPENAI_API_KEY` allows only chat aliases, while `RAG_OPENAI_API_KEY` allows only `dev-embed`.
 - Route Open WebUI knowledge/RAG embeddings through LiteLLM with `RAG_EMBEDDING_ENGINE=openai`, `RAG_OPENAI_API_BASE_URL`, `RAG_OPENAI_API_KEY`, and `RAG_EMBEDDING_MODEL=dev-embed`.
 - Use a stable sealed `WEBUI_SECRET_KEY`.
@@ -141,10 +141,10 @@ This manifest was approved by the operator for the staging evaluation deployment
 | --- | --- | --- |
 | Open WebUI service | Done | Root page and `/health` returned HTTP 200 after deployment. |
 | Open WebUI access controls | Done | Bootstrap admin login returned HTTP 200; signup is disabled; direct connections, Ollama, and evaluation arena models are disabled. |
-| Open WebUI model restrictions | Done | Authenticated model list exposes only `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`; `dev-embed` remains configured only through the separate RAG key. |
+| Open WebUI model restrictions | Needs update | Previous staging validation exposed `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`; the local allowlist is updated to `dev-long-horizon` and requires fresh staging validation. |
 | Open WebUI LiteLLM chat path | Done | Authenticated UI chat completion through `dev-fast` returned HTTP 200. |
 | LibreChat services | Done | MongoDB, Meilisearch, pgvector, RAG API, and LibreChat API are running in staging. |
 | LibreChat Mongo authentication | Done | Initial Mongo auth failure was repaired by creating the admin user from sealed Mongo service variables; LibreChat now connects to MongoDB successfully. |
 | LibreChat access controls | Done | Bootstrap admin account was created, then `ALLOW_REGISTRATION=false` was applied; email login remains enabled, social login and password reset remain disabled. |
-| LibreChat model restrictions | Done | Authenticated `LiteLLM Staging` endpoint exposes only `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`. |
+| LibreChat model restrictions | Needs update | Previous staging validation exposed `dev-fast`, `dev-code`, `dev-reasoning`, and `dev-long-context`; the local allowlist is updated to `dev-long-horizon` and requires fresh staging validation. |
 | LibreChat LiteLLM chat path | Done | Authenticated chat through `/api/agents/chat/custom` with `dev-fast` returned HTTP 200. |
