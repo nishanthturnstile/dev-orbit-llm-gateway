@@ -16,9 +16,13 @@ Current runbooks:
 - `provider-outage-same-tier-fallback.md` - provider outage response and same-tier fallback gate.
 - `railway-deploy-rollback.md` - Railway deployment rollback and bad-config recovery.
 - `prompt-log-leakage-investigation.md` - prompt/response leakage investigation procedure.
+- `production-deployment.md` - production deployment sequence, exact-approval gates, gateway/UI validation, and pilot gate.
+- `staging-to-production-promotion.md` - config/code promotion from staging to production without Railway full environment Sync.
+- `rollback.md` - production rollback, domain/key/config rollback, DB restore guardrails, and UI rollback.
 - `..\operations\staging-proof-gates.md` - Phase 8 staging proof-gate evidence checklist.
 - `..\onboarding\supported-developer-tool-setup.md` - Phase 8 developer-tool setup and validation evidence template.
+- `..\onboarding\production-usage-rules.md` - draft pilot usage rules for developers.
 
-Later phases will add runbooks for production deployment and custom-domain cutover. Cloudflare Tunnel/Access/WAF and edge-origin services are not part of the current implementation path.
+Later phases will add pilot review notes after production access starts. Cloudflare Tunnel/Access/WAF and edge-origin services are not part of the current implementation path.
 
 Do not store secrets, generated virtual keys, database URLs, backup credentials, private hostnames, or raw incident payloads in runbooks.

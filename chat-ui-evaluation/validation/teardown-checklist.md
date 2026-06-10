@@ -1,6 +1,8 @@
 # Chat UI teardown checklist
 
-Use this checklist after the staging evaluation window or immediately if a UI is exposed incorrectly.
+Use this checklist after the staging evaluation window or immediately if a staging UI is exposed incorrectly.
+
+This checklist applies to staging evaluation resources only. Production Open WebUI or LibreChat resources, if created, are durable production systems governed by `docs\decisions\production-chat-ui-scope.md`, `docs\runbooks\rollback.md`, and the approved production retention/backup policy. Do not delete production UI data stores with this checklist.
 
 ## LiteLLM cleanup
 

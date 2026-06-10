@@ -2,6 +2,8 @@
 
 **Status:** Staging evaluation support for deployed Open WebUI and LibreChat services. This folder is not part of the LiteLLM gateway runtime or v1 gateway control plane. Future Railway mutations still require explicit operator approval for the exact action.
 
+Production planning now includes fresh production Open WebUI and LibreChat add-ons; see `docs\decisions\production-chat-ui-scope.md` and `config\railway\production.md`. The staging evaluation services and data remain evaluation-only and must not be promoted, copied, or treated as production state.
+
 This folder contains placeholder-only configuration and operational checklists for evaluating Open WebUI and LibreChat as separate UI services connected to the existing LiteLLM staging gateway.
 
 ```text
@@ -19,6 +21,7 @@ UI data stores          -> UI state/content only; never share LiteLLM Postgres
 3. Include advanced features only when they can be configured safely.
 4. Disable any feature that requires direct provider keys, search-provider keys, execution secrets, external connectors, or unreviewed plugins until that exact integration is separately approved.
 5. Destroy all UI evaluation data after the test window, including chats, uploads, indexes, vector data, service volumes/databases, and non-required logs.
+6. Production UI resources, if created, must be fresh production resources governed by production retention, access-control, backup, restore, RPO/RTO, and rollback policy.
 
 ## Staging login access
 

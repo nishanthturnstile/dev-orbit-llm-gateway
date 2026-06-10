@@ -1,6 +1,6 @@
 # Implementation status tracker
 
-**Status date:** 2026-06-07
+**Status date:** 2026-06-10
 **Current phase:** Phase 8 - Staging proof gates and client compatibility (In progress under Phase 7 staging risk exception; production remains blocked by deferred DR/alerting gates)
 **Primary roadmap:** `docs\internal-llm-gateway-implementation-roadmap.md`
 
@@ -24,11 +24,11 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | 2 | Local service scaffolding and policy/config authoring | Done | Local scaffolds, LiteLLM runtime config, policy metadata, smoke skeletons, and validation docs are complete. Local YAML/verifier/shell syntax/pytest validation passed. GPT-5.5 and Opus 4.8 reviews approved with no blockers. Cloudflare tunnel scaffolds were later removed from the current implementation path during Phase 8 planning cleanup. No Railway/provider/tunnel resources were mutated by that cleanup. |
 | 3 | CI/CD, secret scanning, and policy gates | Done | Local/CI enforcement scripts, GitHub Actions workflows, secret scanning, and image policy gates are complete. Local validation passed; GPT-5.5 approved as-is and Opus 4.8 approved with minor hardening notes that were addressed. No Railway/provider/Cloudflare/GitHub settings were mutated. |
 | 4 | Durable Railway staging provisioning | Done | Durable Railway project `dev-orbit-llm-gateway` and `staging` environment exist. Managed Postgres is healthy; app service shells are sourceless, undeployed, and domainless. Local validation passed; GPT-5.5 and Opus 4.8 reviewed with no blockers. |
-| 5 | LiteLLM deployment and runtime policy validation | Done | `litellm-proxy` deployment `095bc349-2e77-4552-9ab4-ff36d54bb506` is `SUCCESS` with one running replica and no public URL. Private validation passes for readiness, missing/invalid auth, OpenAI-backed aliases, streaming, embeddings, key metadata persistence, admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, docs/ReDoc/OpenAPI closure, Admin UI private reachability with sealed credentials, and targeted `dev-search` validation with the rotated Perplexity key. |
+| 5 | LiteLLM deployment and runtime policy validation | Done | `litellm-proxy` deployment `095bc349-2e77-4552-9ab4-ff36d54bb506` is `SUCCESS` with one running replica and no public URL. Private validation passed for the previous OpenAI-backed alias set, streaming, embeddings, key metadata persistence, admin route denial, forbidden/direct-provider alias denial, spend metadata access, disposable-key blocking, docs/ReDoc/OpenAPI closure, Admin UI private reachability with sealed credentials, and targeted `dev-search` validation with the rotated Perplexity key. The current Fireworks/premium alias expansion still needs fresh runtime validation. |
 | 6 | Public-origin hardening and access validation | Done | Railway-generated staging endpoint is live. Missing/invalid auth is blocked, valid disposable keys succeed on approved `/v1` chat/search/embedding routes, developer key admin route is denied, docs/ReDoc/OpenAPI are blocked, Admin UI loads at `/ui/` with sealed credentials, and disposable public validation key was blocked. Active alerting is explicitly risk-accepted as deferred for this staging proof. |
 | 7 | Backups, restore, alerts, and runbooks | In progress | Staging backup-worker path is validated, and the operator accepted a staging-only risk exception to defer native backup evidence, fresh restore drill, restored DB auth validation, RPO/RTO measurement, and backup-failure push alerting to the final pre-production gate. These remain production blockers. |
 | 8 | Staging proof gates and client compatibility | In progress | Phase 8 plan has GPT-5.5 and Opus 4.8 review. Staging risk exception, proof-gate checklist, developer-tool setup doc, and production readiness draft are added. Runtime/client evidence still needs operator endpoint/key/tool inputs. |
-| 9 | Production deployment, cutover, and pilot | Not started | Depends on all staging proof gates. |
+| 9 | Production deployment, cutover, and pilot | Not started | Production migration planning is documented for the existing Railway project `production` environment in Asia/Singapore, including gateway, Open WebUI, and LibreChat. Implementation remains blocked by Phase 7/8 gates, UI data-governance docs, and exact operator approvals for each Railway mutation. |
 | 10 | Post-pilot hardening and deferred capabilities | Not started | Depends on production pilot findings. |
 
 ## Current direction correction
@@ -38,6 +38,7 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | Remove Cloudflare tunnel/access/edge from current implementation path. | Done | Repository scaffold cleanup and source-doc alignment are complete. `services\cloudflared-tunnel`, `config\cloudflare`, `tests\smoke\test_cloudflare_block.py`, the `.env.example` tunnel placeholder, and the hard-coded cloudflared YAML lint path were removed. Historical evidence and defensive secret-scanning rules are preserved. Local lint, secret scan, and smoke collection/tests passed. |
 | Railway `cloudflared-tunnel` shell cleanup. | Blocked | A sourceless shell may still exist from earlier Phase 4 work. Deletion is a Railway mutation and requires explicit operator approval before action. |
 | Phase 8 proof execution. | In progress | Proceeding under `docs\decisions\phase-7-staging-risk-exception.md`; deferred Phase 7 items remain production blockers. |
+| Model alias expansion to Fireworks, premium, and ultra-premium tiers. | Done for repository artifacts | Repository config and docs are updated for `dev-fast`, `dev-code`, `dev-long-horizon`, `dev-reasoning`, utility aliases, and restricted premium aliases. Local config validation, policy lint, smoke collection/tests, built-in secret checks, Python syntax checks, and diff whitespace checks passed on 2026-06-10. Railway variables, deployments, virtual keys, and runtime validation were not mutated and remain pending explicit operator approval. |
 
 ## Chat UI evaluation add-on
 
@@ -45,6 +46,18 @@ Do not mark a task `Done` without evidence in this file or a linked Phase 0 arti
 | --- | --- | --- |
 | Open WebUI and LibreChat staging evaluation scaffold. | Done | `chat-ui-evaluation` documents separate staging UI services, UI-only data stores, teardown requirements, scoped LiteLLM UI keys, exact Railway approval boundaries, deployed controls, and validation evidence. |
 | Open WebUI and LibreChat staging deployment. | Done | Operator approved the staging deployment. Open WebUI and LibreChat evaluation services, volumes/data stores, public Railway domains, scoped LiteLLM UI keys, and sealed service variables are configured in `staging`. Open WebUI uses separate chat and RAG LiteLLM keys; root/health, admin login, restricted chat model list, and chat via `dev-fast` returned HTTP 200. LibreChat API, MongoDB, Meilisearch, pgvector, and RAG API are running; LibreChat admin bootstrap is complete, registration is disabled, the `LiteLLM Staging` endpoint exposes only approved chat aliases, and chat via `/api/agents/chat/custom` returned HTTP 200. |
+
+## Production migration planning
+
+| Item | Status | Evidence / blocker |
+| --- | --- | --- |
+| Production scope selection. | Done | Production scope is gateway core plus production Open WebUI and LibreChat. |
+| Production region selection. | Done | Production target region is Asia/Singapore, matching staging: `asia-southeast1-eqsg3a`. |
+| Railway isolation model. | Done | Production will use the existing Railway project `dev-orbit-llm-gateway` and its `production` environment, matching the roadmap model. |
+| Production UI data posture. | Done | Open WebUI and LibreChat stores are durable production data and must be covered by retention, access control, backup, restore, RPO/RTO, and rollback planning. |
+| Production chat UI scope decision. | Done | `docs\decisions\production-chat-ui-scope.md` records Open WebUI and LibreChat as production add-ons that must use fresh resources, scoped LiteLLM keys, separate UI stores, and durable-data controls. |
+| Staging-to-production promotion model. | Done | Full Railway environment Sync is rejected for this project because it may copy staging variables, domains, stateful resources, and UI data. `docs\runbooks\staging-to-production-promotion.md` defines Git/config artifact promotion instead. |
+| Production deployment execution. | Blocked | Do not mutate Railway production resources until Phase 7/8 blockers are closed or explicitly accepted and the operator approves each exact action. |
 
 ## Phase 0 task tracker
 
